@@ -97,17 +97,10 @@ IDENTIFIER_TUPLE:
 
 WHITESPACE: [ \r\n\t]+ -> skip;
 
-PRIMITIVE: INT | REAL | BOOL | UNIT | CHAR | STRING;
-LIST:
-	L_BRACKET PRIMITIVE (COMMA PRIMITIVE)* R_BRACKET
-	| LIST_NIL;
-
 // list are linked list that starts from head to tail
 LIST_NIL: 'nil';
 LIST_CONSTRUCT: '::';
 LIST_CONCAT: '@';
-
-TUPLE: L_PAREN PRIMITIVE (COMMA PRIMITIVE)* R_PAREN;
 
 /*
  * Productions
@@ -135,6 +128,20 @@ declaration:
 	| function		# functionDeclaration
 	| localBlock	# localBlockDeclaration;
 
+literal:
+	INT			# intLiteral
+	| REAL		# realLiteral
+	| BOOL		# boolLiteral
+	| UNIT		# unitLiteral
+	| CHAR		# charLiteral
+	| STRING	# stringLiteral;
+
+list:
+	L_BRACKET first = literal (COMMA rest += literal)* R_BRACKET	# literalList
+	| LIST_NIL														# nilList;
+
+tuple: L_PAREN first = literal (COMMA rest += literal)+ R_PAREN;
+
 conditional:
 	IF predicate = expression THEN consequent = expression ELSE alternative = expression;
 
@@ -161,10 +168,15 @@ patternMatch:
 	)*;
 
 expression:
-	PRIMITIVE												# literalExpression
+	INT														# intExpression
+	| REAL													# realExpression
+	| BOOL													# boolExpression
+	| UNIT													# unitExpression
+	| CHAR													# charExpression
+	| STRING												# stringExpression
 	| IDENTIFIER											# identifierExpression
-	| TUPLE													# tupleExpression
-	| LIST													# listExpression
+	| tuple													# tupleExpression
+	| list													# listExpression
 	| conditional											# conditionalExpression
 	| apply													# applyExpression
 	| lambda												# lambdaExpression
