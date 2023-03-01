@@ -112,26 +112,28 @@ TUPLE: L_PAREN PRIMITIVE (COMMA PRIMITIVE)* R_PAREN;
 /*
  * Productions
  */
-start: statement | sequence;
+start: statement+;
 
-statement: declaration | expression;
-
-sequence: statement statement+;
+statement:
+	declaration		# declarationStatement
+	| expression	# expressionStatement;
 
 variable: VAL name = IDENTIFIER EQUALS value = expression;
 
-argument:
-	IDENTIFIER
-	| IDENTIFIER_TUPLE
-	| L_PAREN argument R_PAREN;
-
 function:
-	FUN name = IDENTIFIER arg = argument EQUALS body = expression;
+	FUN name = IDENTIFIER (
+		identifierArg = IDENTIFIER
+		| identifierParenthesisArg = L_PAREN IDENTIFIER R_PAREN
+		| identifierTupleArg = IDENTIFIER_TUPLE
+	) EQUALS body = expression;
 
 localBlock:
 	LOCAL declarations = declaration+ IN body = declaration+ END;
 
-declaration: variable | function | localBlock;
+declaration:
+	variable		# variableDeclaration
+	| function		# functionDeclaration
+	| localBlock	# localBlockDeclaration;
 
 conditional:
 	IF predicate = expression THEN consequent = expression ELSE alternative = expression;
@@ -139,15 +141,23 @@ conditional:
 letBlock:
 	LET declarations = declaration+ IN body = expression END;
 
-executable: (IDENTIFIER | lambda | IDENTIFIER DOT IDENTIFIER);
+apply:
+	(
+		identifierApply = IDENTIFIER
+		| lambdaApply = lambda
+		| structNameApply = IDENTIFIER DOT structMethodApply = IDENTIFIER
+	) arg = expression;
 
-apply: func = executable arg = expression;
-
-lambda: FN arg = argument DOUBLE_ARROW body = expression;
+lambda:
+	FN (
+		identifierArg = IDENTIFIER
+		| identifierParenthesisArg = L_PAREN IDENTIFIER R_PAREN
+		| identifierTupleArg = IDENTIFIER_TUPLE
+	) DOUBLE_ARROW body = expression;
 
 patternMatch:
-	CASE IDENTIFIER OF expression DOUBLE_ARROW expression (
-		NEXT_PATTERN expression DOUBLE_ARROW expression
+	CASE name = IDENTIFIER OF firstCase = expression DOUBLE_ARROW firstResult = expression (
+		NEXT_PATTERN nextCase = expression DOUBLE_ARROW nextResult = expression
 	)*;
 
 expression:
@@ -163,7 +173,8 @@ expression:
 	| operator = UNOP expr = expression						# unaryOperatorExpression
 	| letBlock												# letBlockExpression
 	| patternMatch											# patternMatchExpression
-	| IDENTIFIER DOT IDENTIFIER								# structAttributeExpression; // accessing a struct’s attribute		
+	| name = IDENTIFIER DOT attribute = IDENTIFIER			# structAttributeExpression;
+	// accessing a struct’s attribute
 type:
 	TYPE_INT
 	| TYPE_REAL
