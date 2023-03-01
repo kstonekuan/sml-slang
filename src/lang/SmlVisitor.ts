@@ -36,7 +36,6 @@ import { ExpressionContext } from "./SmlParser";
 import { TypeContext } from "./SmlParser";
 import { TypeDefinitionContext } from "./SmlParser";
 import { ModuleSignatureContext } from "./SmlParser";
-import { StructDeclarationContext } from "./SmlParser";
 import { StructBlockContext } from "./SmlParser";
 import { ModuleStructureContext } from "./SmlParser";
 import { FunctorApplyContext } from "./SmlParser";
@@ -299,13 +298,6 @@ export interface SmlVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitModuleSignature?: (ctx: ModuleSignatureContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SmlParser.structDeclaration`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitStructDeclaration?: (ctx: StructDeclarationContext) => Result;
 
 	/**
 	 * Visit a parse tree produced by `SmlParser.structBlock`.

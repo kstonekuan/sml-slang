@@ -174,7 +174,7 @@ expression:
 	| letBlock												# letBlockExpression
 	| patternMatch											# patternMatchExpression
 	| name = IDENTIFIER DOT attribute = IDENTIFIER			# structAttributeExpression;
-	// accessing a struct’s attribute
+// accessing a struct’s attribute
 type:
 	TYPE_INT
 	| TYPE_REAL
@@ -192,9 +192,7 @@ typeDefinition: VAL IDENTIFIER COLON type;
 moduleSignature:
 	SIGNATURE name = IDENTIFIER EQUALS SIG typeDefinition+ END;
 
-structDeclaration: variable | function;
-
-structBlock: STRUCT structDeclaration+ END;
+structBlock: STRUCT (variable | function)+ END;
 
 moduleStructure:
 	STRUCTURE name = IDENTIFIER EQUALS (

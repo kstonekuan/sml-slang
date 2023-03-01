@@ -36,7 +36,6 @@ import { ExpressionContext } from "./SmlParser";
 import { TypeContext } from "./SmlParser";
 import { TypeDefinitionContext } from "./SmlParser";
 import { ModuleSignatureContext } from "./SmlParser";
-import { StructDeclarationContext } from "./SmlParser";
 import { StructBlockContext } from "./SmlParser";
 import { ModuleStructureContext } from "./SmlParser";
 import { FunctorApplyContext } from "./SmlParser";
@@ -446,17 +445,6 @@ export interface SmlListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitModuleSignature?: (ctx: ModuleSignatureContext) => void;
-
-	/**
-	 * Enter a parse tree produced by `SmlParser.structDeclaration`.
-	 * @param ctx the parse tree
-	 */
-	enterStructDeclaration?: (ctx: StructDeclarationContext) => void;
-	/**
-	 * Exit a parse tree produced by `SmlParser.structDeclaration`.
-	 * @param ctx the parse tree
-	 */
-	exitStructDeclaration?: (ctx: StructDeclarationContext) => void;
 
 	/**
 	 * Enter a parse tree produced by `SmlParser.structBlock`.
