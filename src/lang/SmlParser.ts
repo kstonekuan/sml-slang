@@ -1,3 +1,4 @@
+/* eslint-disable prefer-const */
 // Generated from ./src/lang/Sml.g4 by ANTLR 4.9.0-SNAPSHOT
 
 

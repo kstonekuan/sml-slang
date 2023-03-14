@@ -5,9 +5,9 @@ import { ParseTree } from 'antlr4ts/tree/ParseTree'
 import { RuleNode } from 'antlr4ts/tree/RuleNode'
 import { TerminalNode } from 'antlr4ts/tree/TerminalNode'
 import * as es from 'estree'
-
 import { SmlLexer } from '../lang/SmlLexer'
-import { LiteralExpressionContext } from "../lang/SmlParser";
+
+import { LiteralExpressionContext, SmlParser } from "../lang/SmlParser";
 import { IdentifierExpressionContext } from "../lang/SmlParser";
 import { TupleExpressionContext } from "../lang/SmlParser";
 import { ListExpressionContext } from "../lang/SmlParser";
@@ -20,32 +20,30 @@ import { UnaryOperatorExpressionContext } from "../lang/SmlParser";
 import { LetBlockExpressionContext } from "../lang/SmlParser";
 import { PatternMatchExpressionContext } from "../lang/SmlParser";
 import { StructAttributeExpressionContext } from "../lang/SmlParser";
+import { VariableDeclarationContext } from "../lang/SmlParser";
+import { FunctionDeclarationContext } from "../lang/SmlParser";
+import { LocalBlockDeclarationContext } from "../lang/SmlParser";
+import { DeclarationStatementContext } from "../lang/SmlParser";
+import { ExpressionStatementContext } from "../lang/SmlParser";
 import { StartContext } from "../lang/SmlParser";
 import { StatementContext } from "../lang/SmlParser";
-import { SequenceContext } from "../lang/SmlParser";
 import { VariableContext } from "../lang/SmlParser";
-import { ArgumentContext } from "../lang/SmlParser";
 import { FunctionContext } from "../lang/SmlParser";
 import { LocalBlockContext } from "../lang/SmlParser";
 import { DeclarationContext } from "../lang/SmlParser";
 import { ConditionalContext } from "../lang/SmlParser";
 import { LetBlockContext } from "../lang/SmlParser";
-import { ExecutableContext } from "../lang/SmlParser";
 import { ApplyContext } from "../lang/SmlParser";
 import { LambdaContext } from "../lang/SmlParser";
 import { PatternMatchContext } from "../lang/SmlParser";
 import { ExpressionContext } from "../lang/SmlParser";
 import { TypeContext } from "../lang/SmlParser";
 import { TypeDefinitionContext } from "../lang/SmlParser";
-import { ModuleSignatureContext } from "../lang/SmlParser";
-import { StructDeclarationContext } from "../lang/SmlParser";
-import { StructBlockContext } from "../lang/SmlParser";
-import { ModuleStructureContext } from "../lang/SmlParser";
-import { FunctorApplyContext } from "../lang/SmlParser";
-import { FunctorDefContext } from "../lang/SmlParser";
 import { SmlVisitor } from '../lang/SmlVisitor'
+import { ParenthesesContext } from '../lang_calc/CalcParser'
 import { Context, ErrorSeverity, ErrorType, SourceError } from '../types'
 import { stripIndent } from '../utils/formatters'
+import { binaryOp } from '../utils/operators'
 
 export class DisallowedConstructError implements SourceError {
   public type = ErrorType.SYNTAX
@@ -144,65 +142,129 @@ function contextToLocation(ctx: ExpressionContext): es.SourceLocation {
     }
   }
 }
-class ExpressionGenerator implements CalcVisitor<es.Expression> {
-  visitNumber(ctx: NumberContext): es.Expression {
+class ExpressionGenerator implements SmlVisitor<es.Expression> {
+  visitLiteral(ctx: LiteralExpressionContext): es.Expression {   // for our PRIMITIVES
     return {
       type: 'Literal',
-      value: parseInt(ctx.text),
-      raw: ctx.text,
-      loc: contextToLocation(ctx)
+      value: ctx.text,
+      loc: contextToLocation(ctx)   // For troubleshooting
     }
   }
-  visitParentheses(ctx: ParenthesesContext): es.Expression {
+  visitParentheses(ctx: ParanthesesExpressionContext): es.Expression {
     return this.visit(ctx.expression())
   }
-  visitPower(ctx: PowerContext): es.Expression {
+  visitBinop(ctx: BinaryOperatorExpressionContext): es.Expression {
     return {
       type: 'BinaryExpression',
-      operator: '^',
+      operator: SmlParser.BINOP[ctx._operator.type],
       left: this.visit(ctx._left),
       right: this.visit(ctx._right),
+      loc: contextToLocation(ctx)
+    }
+  }
+  visitUnop(ctx: UnaryOperatorExpressionContext): es.Expression {
+    return {
+      type: 'UnaryExpression',
+      operator: SmlParser.UNOP[ctx._operator.type],
+      prefix: true,                         // Unary operators are always prefix
+      argument: this.visit(ctx._expr),
+      loc: contextToLocation(ctx)
+    }
+  }
+  visitIdentifier(ctx: IdentifierExpressionContext): es.Expression {
+    return {
+      type: 'Identifier',
+      name: ctx.text,
+      loc: contextToLocation(ctx)
+    }
+  }
+  visitConditionalExpression(ctx: ConditionalExpressionContext): es.Expression {
+    return {
+      type: 'ConditionalExpression',
+      test: this.visit(ctx._predicate),
+      consequent: this.visit(ctx._consequent),
+      alternate: this.visit(ctx._alternate),            // oh shit maybe indexing works
+      loc: contextToLocation(ctx)
+    }
+  }
+  visitDeclaration(ctx: VariableDeclarationContext): es.Expression {
+    return {
+      type: 'AssignmentExpression',
+      operator: ctx[0],
+      kind: ctx[1],
+      loc: contextToLocation(ctx)
+    }
+  }
+  visitAssignment(ctx: AssignmentContext): es.Expression {
+    return {
+      type: 'AssignmentExpression',
+      operator: ctx[0],
+      left: ctx[1],
+      right: ctx[2],
+      loc: contextToLocation(ctx)
+    }
+  }
+  visitFunction(ctx: FunctionContext): es.Expression {
+    return {
+      type: 'FunctionDeclaration',
+      id: ctx[0],
+      params: ctx[1],
+      body: ctx[2],
+      loc: contextToLocation(ctx)
+    }
+  }
+  visitFunctionCall(ctx: FunctionCallContext): es.Expression {
+    return {
+      type: 'CallExpression',
+      callee: ctx[0],
+      arguments: ctx[1],
       loc: contextToLocation(ctx)
     }
   }
 
-  visitMultiplication(ctx: MultiplicationContext): es.Expression {
-    return {
-      type: 'BinaryExpression',
-      operator: '*',
-      left: this.visit(ctx._left),
-      right: this.visit(ctx._right),
-      loc: contextToLocation(ctx)
-    }
-  }
-  visitDivision(ctx: DivisionContext): es.Expression {
-    return {
-      type: 'BinaryExpression',
-      operator: '/',
-      left: this.visit(ctx._left),
-      right: this.visit(ctx._right),
-      loc: contextToLocation(ctx)
-    }
-  }
-  visitAddition(ctx: AdditionContext): es.Expression {
-    return {
-      type: 'BinaryExpression',
-      operator: '+',
-      left: this.visit(ctx._left),
-      right: this.visit(ctx._right),
-      loc: contextToLocation(ctx)
-    }
-  }
+  
 
-  visitSubtraction(ctx: SubtractionContext): es.Expression {
-    return {
-      type: 'BinaryExpression',
-      operator: '-',
-      left: this.visit(ctx._left),
-      right: this.visit(ctx._right),
-      loc: contextToLocation(ctx)
-    }
-  }
+  
+
+
+
+  // visitMultiplication(ctx: MultiplicationContext): es.Expression {
+  //   return {
+  //     type: 'BinaryExpression',
+  //     operator: '*',
+  //     left: this.visit(ctx._left),
+  //     right: this.visit(ctx._right),
+  //     loc: contextToLocation(ctx)
+  //   }
+  // }
+  // visitDivision(ctx: DivisionContext): es.Expression {
+  //   return {
+  //     type: 'BinaryExpression',
+  //     operator: '/',
+  //     left: this.visit(ctx._left),
+  //     right: this.visit(ctx._right),
+  //     loc: contextToLocation(ctx)
+  //   }
+  // }
+  // visitAddition(ctx: AdditionContext): es.Expression {
+  //   return {
+  //     type: 'BinaryExpression',
+  //     operator: '+',
+  //     left: this.visit(ctx._left),
+  //     right: this.visit(ctx._right),
+  //     loc: contextToLocation(ctx)
+  //   }
+  // }
+
+  // visitSubtraction(ctx: SubtractionContext): es.Expression {
+  //   return {
+  //     type: 'BinaryExpression',
+  //     operator: '-',
+  //     left: this.visit(ctx._left),
+  //     right: this.visit(ctx._right),
+  //     loc: contextToLocation(ctx)
+  //   }
+  // }
 
   visitExpression?: ((ctx: ExpressionContext) => es.Expression) | undefined
   visitStart?: ((ctx: StartContext) => es.Expression) | undefined
@@ -241,6 +303,56 @@ class ExpressionGenerator implements CalcVisitor<es.Expression> {
   }
 }
 
+// class DeclarationGenerator implements SmlVisitor<es.Declaration> {
+
+//   visitVariableDeclaration(ctx: VariableDeclarationContext): es.Declaration {
+//     return {
+//       type: 'VariableDeclaration',
+//       declarations: ctx[0],       // check this against index.d.ts
+//       kind: 'var',
+//       loc: contextToLocation(ctx)
+//     }
+//   }
+
+
+//   /* NOT SURE IF I AM RIGHT OR NOT JUST FOLLOWING FROM EXPRESSION EXAMPLE ABOVE */
+//   visitDeclaration?: ((ctx: DeclarationContext) => es.Declaration) | undefined
+//   visitStart?: ((ctx: StartContext) => es.Declaration) | undefined      // not sure if this is right
+
+//   visit(tree: ParseTree): es.Declaration {
+//     return tree.accept(this)
+//   }
+//   visitChildren(node: RuleNode): es.Declaration {
+//     const declarations: es.VariableDeclarator[] = []
+//     for (let i = 0; i < node.childCount; i++) {
+//       declarations.push(node.getChild(i).accept(this))
+//     }
+//     return {
+//       type: 'Declaration',
+//       declarations          // Do we even need a sequence of declarations? lol idk alr
+//     }
+//   }
+//   visitTerminal(node: TerminalNode): es.Declaration {
+//     return node.accept(this)
+//   }
+
+//   visitErrorNode(node: ErrorNode): es.Declaration {
+//     throw new FatalSyntaxError(
+//       {
+//         start: {
+//           line: node.symbol.line,
+//           column: node.symbol.charPositionInLine
+//         },
+//         end: {
+//           line: node.symbol.line,
+//           column: node.symbol.charPositionInLine + 1
+//         }
+//       },
+//       `invalid syntax ${node.text}`
+//     )
+//   }
+// }
+
 function convertExpression(expression: ExpressionContext): es.Expression {
   const generator = new ExpressionGenerator()
   return expression.accept(generator)
@@ -264,9 +376,9 @@ export function parse(source: string, context: Context) {
 
   if (context.variant === 'calc') {
     const inputStream = CharStreams.fromString(source)
-    const lexer = new CalcLexer(inputStream)
+    const lexer = new SmlLexer(inputStream)
     const tokenStream = new CommonTokenStream(lexer)
-    const parser = new CalcParser(tokenStream)
+    const parser = new SmlParser(tokenStream)
     parser.buildParseTree = true
     try {
       const tree = parser.expression()
