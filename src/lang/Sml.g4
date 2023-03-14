@@ -105,11 +105,11 @@ LIST_CONCAT: '@';
 /*
  * Productions
  */
-start: statement+;
+start: statements = statement+;
 
 statement:
-	declaration		# declarationStatement
-	| expression	# expressionStatement;
+	body = declaration	# declarationStatement
+	| body = expression	# expressionStatement;
 
 variable: VAL name = IDENTIFIER EQUALS value = expression;
 
@@ -120,40 +120,22 @@ function:
 		| identifierTupleArg = IDENTIFIER_TUPLE
 	) EQUALS body = expression;
 
-localBlock:
-	LOCAL declarations = declaration+ IN body = declaration+ END;
-
 declaration:
-	variable		# variableDeclaration
-	| function		# functionDeclaration
-	| localBlock	# localBlockDeclaration;
+	body = variable													# variableDeclaration
+	| body = function												# functionDeclaration
+	| LOCAL declarations = declaration+ IN body = declaration+ END	# localBlockDeclaration;
 
 literal:
-	INT			# intLiteral
-	| REAL		# realLiteral
-	| BOOL		# boolLiteral
-	| UNIT		# unitLiteral
-	| CHAR		# charLiteral
-	| STRING	# stringLiteral;
+	value = INT			# intLiteral
+	| value = REAL		# realLiteral
+	| value = BOOL		# boolLiteral
+	| value = UNIT		# unitLiteral
+	| value = CHAR		# charLiteral
+	| value = STRING	# stringLiteral;
 
 list:
 	L_BRACKET first = literal (COMMA rest += literal)* R_BRACKET	# literalList
 	| LIST_NIL														# nilList;
-
-tuple: L_PAREN first = literal (COMMA rest += literal)+ R_PAREN;
-
-conditional:
-	IF predicate = expression THEN consequent = expression ELSE alternative = expression;
-
-letBlock:
-	LET declarations = declaration+ IN body = expression END;
-
-apply:
-	(
-		identifierApply = IDENTIFIER
-		| lambdaApply = lambda
-		| structNameApply = IDENTIFIER DOT structMethodApply = IDENTIFIER
-	) arg = expression;
 
 lambda:
 	FN (
@@ -162,30 +144,27 @@ lambda:
 		| identifierTupleArg = IDENTIFIER_TUPLE
 	) DOUBLE_ARROW body = expression;
 
-patternMatch:
-	CASE name = IDENTIFIER OF firstCase = expression DOUBLE_ARROW firstResult = expression (
-		NEXT_PATTERN nextCase = expression DOUBLE_ARROW nextResult = expression
-	)*;
-
 expression:
-	INT														# intExpression
-	| REAL													# realExpression
-	| BOOL													# boolExpression
-	| UNIT													# unitExpression
-	| CHAR													# charExpression
-	| STRING												# stringExpression
-	| IDENTIFIER											# identifierExpression
-	| tuple													# tupleExpression
-	| list													# listExpression
-	| conditional											# conditionalExpression
-	| apply													# applyExpression
-	| lambda												# lambdaExpression
-	| L_PAREN inner = expression R_PAREN					# paranthesesExpression
-	| left = expression operator = BINOP right = expression	# binaryOperatorExpression
-	| operator = UNOP expr = expression						# unaryOperatorExpression
-	| letBlock												# letBlockExpression
-	| patternMatch											# patternMatchExpression
-	| name = IDENTIFIER DOT attribute = IDENTIFIER			# structAttributeExpression;
+	body = literal																			# literalExpression
+	| name = IDENTIFIER																		# identifierExpression
+	| L_PAREN first = literal (COMMA rest += literal)+ R_PAREN								# tupleExpression
+	| body = list																			# listExpression
+	| IF predicate = expression THEN consequent = expression ELSE alternative = expression	#
+		conditionalExpression
+	| (
+		identifierApply = IDENTIFIER
+		| lambdaApply = lambda
+		| structNameApply = IDENTIFIER DOT structMethodApply = IDENTIFIER
+	) arg = expression											# applyExpression
+	| body = lambda												# lambdaExpression
+	| L_PAREN inner = expression R_PAREN						# paranthesesExpression
+	| left = expression operator = BINOP right = expression		# binaryOperatorExpression
+	| operator = UNOP expr = expression							# unaryOperatorExpression
+	| LET declarations = declaration+ IN body = expression END	# letBlockExpression
+	| CASE name = IDENTIFIER OF firstCase = expression DOUBLE_ARROW firstResult = expression (
+		NEXT_PATTERN nextCase = expression DOUBLE_ARROW nextResult = expression
+	)*												# patternMatchExpression
+	| name = IDENTIFIER DOT attribute = IDENTIFIER	# structAttributeExpression;
 // accessing a struct’s attribute
 type:
 	TYPE_INT
