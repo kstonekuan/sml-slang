@@ -1,209 +1,254 @@
 /* tslint:disable:max-classes-per-file */
-import * as es from 'estree'
+import { error, stringify } from 'sicp'
 
-import { RuntimeSourceError } from '../errors/runtimeSourceError'
-import { Context, Environment, Value } from '../types'
-import { evaluateBinaryExpression, evaluateUnaryExpression } from '../utils/operators'
-import * as rttc from '../utils/rttc'
+import { command_to_string } from './debug'
+import { assign, extend, global_environment, handle_sequence, lookup, scan, unassigned } from './environment'
+import { apply_binop, apply_builtin, apply_unop, peek, push } from './utils'
 
-class Thunk {
-  public value: Value
-  public isMemoized: boolean
-  constructor(public exp: es.Node, public env: Environment) {
-    this.isMemoized = false
-    this.value = null
-  }
-}
+/* **************************
+ * interpreter configurations
+ * **************************/
 
-function* forceIt(val: any, context: Context): Value {
-  if (val instanceof Thunk) {
-    if (val.isMemoized) return val.value
+// An interpreter configuration has three parts:
+// A: agenda: stack of commands
+// S: stash: stack of values
+// E: environment: list of frames
 
-    pushEnvironment(context, val.env)
-    const evalRes = yield* actualValue(val.exp, context)
-    popEnvironment(context)
-    val.value = evalRes
-    val.isMemoized = true
-    return evalRes
-  } else return val
-}
+// agenda A
 
-export function* actualValue(exp: es.Node, context: Context): Value {
-  const evalResult = yield* evaluate(exp, context)
-  const forced = yield* forceIt(evalResult, context)
-  return forced
-}
+// The agenda A is a stack of commands that still need
+// to be executed by the interpreter. The agenda follows 
+// stack discipline: pop, push, peek at end of the array.
 
-const handleRuntimeError = (context: Context, error: RuntimeSourceError): never => {
-  context.errors.push(error)
-  context.runtime.environments = context.runtime.environments.slice(
-    -context.numberOfOuterEnvironments
-  )
-  throw error
-}
+// Commands are nodes of syntax tree or instructions.
 
-function* visit(context: Context, node: es.Node) {
-  context.runtime.nodes.unshift(node)
-  yield context
-}
+// Instructions are objects whose tag value ends in '_i'.
 
-function* leave(context: Context) {
-  context.runtime.break = false
-  context.runtime.nodes.shift()
-  yield context
-}
+// Execution initializes A as a singleton array
+// containing the given program.
 
-const popEnvironment = (context: Context) => context.runtime.environments.shift()
-export const pushEnvironment = (context: Context, environment: Environment) => {
-  context.runtime.environments.unshift(environment)
-  context.runtime.environmentTree.insert(environment)
-}
+let A: any[]
 
-export type Evaluator<T extends es.Node> = (node: T, context: Context) => IterableIterator<Value>
+// stash S 
 
-function* evaluateBlockSatement(context: Context, node: es.BlockStatement) {
-  let result
-  for (const statement of node.body) {
-    result = yield* evaluate(statement, context)
-  }
-  return result
-}
+// stash S is array of values that stores intermediate 
+// results. The stash follows strict stack discipline:
+// pop, push, peek at the end of the array.
 
-/**
- * WARNING: Do not use object literal shorthands, e.g.
- *   {
- *     *Literal(node: es.Literal, ...) {...},
- *     *ThisExpression(node: es.ThisExpression, ..._ {...},
- *     ...
- *   }
- * They do not minify well, raising uncaught syntax errors in production.
- * See: https://github.com/webpack/webpack/issues/7566
- */
+// Execution initializes stash S as an empty array.
+
+let S: any[]
+
+// environment E
+
+// See *environments* above. Execution initializes 
+// environment E as the global environment.
+
+let E: any[]
+
 // tslint:disable:object-literal-shorthand
 // prettier-ignore
-export const evaluators: { [nodeType: string]: Evaluator<es.Node> } = {
+const microcode = {
   /** Simple Values */
-  Literal: function* (node: es.Literal, _context: Context) {
-    return node.value
-  },
+  lit:
+    cmd =>
+      push(S, cmd.value),
+  nam:
+    cmd =>
+      push(S, lookup(cmd.sym, E)),
+  unop:
+    cmd =>
+      push(A, { tag: 'unop_i', sym: cmd.sym }, cmd.frst),
+  binop:
+    cmd =>
+      push(A, { tag: 'binop_i', sym: cmd.sym }, cmd.scnd, cmd.frst),
+  log:
+    cmd =>
+      push(A, cmd.sym == '&&'
+        ? {
+          tag: 'cond_expr',
+          pred: cmd.frst,
+          cons: { tag: 'lit', val: true },
+          alt: cmd.scnd
+        }
+        : {
+          tag: 'cond_expr',
+          pred: cmd.frst,
+          cons: cmd.scnd,
+          alt: { tag: 'lit', val: false }
+        }),
+  cond_expr:
+    cmd =>
+      push(A, { tag: 'branch_i', cons: cmd.cons, alt: cmd.alt }, cmd.pred),
+  app:
+    cmd =>
+      push(A, { tag: 'app_i', arity: cmd.args.length },
+        ...cmd.args, // already in reverse order, see ast_to_json
+        cmd.fun),
+  assmt:
+    cmd =>
+      push(A, { tag: 'assmt_i', sym: cmd.sym }, cmd.expr),
+  lam:
+    cmd =>
+      push(S, { tag: 'closure', prms: cmd.prms, body: cmd.body, env: E }),
+  arr_acc:
+    cmd =>
+      push(A, { tag: 'arr_acc_i' }, cmd.ind, cmd.arr),
+  arr_len:
+    cmd =>
+      push(A, { tag: 'arr_len_i' }, cmd.expr),
+  arr_lit:
+    cmd =>
+      push(A, { tag: 'arr_lit_i', arity: cmd.elems.length }, ...cmd.elems),
+  arr_assmt:
+    cmd =>
+      push(A, { 'tag': 'arr_assmt_i' }, cmd.expr, cmd.ind, cmd.arr),
 
-  TemplateLiteral: function* (node: es.TemplateLiteral) {
-    // Expressions like `${1}` are not allowed, so no processing needed
-    return node.quasis[0].value.cooked
-  },
+  //
+  // statements
+  //
+  seq:
+    cmd => push(A, ...handle_sequence(cmd.stmts)),
+  cond_stmt:
+    cmd =>
+      push(A, { tag: 'branch_i', cons: cmd.cons, alt: cmd.alt },
+        cmd.pred),
+  blk:
+    cmd => {
+      const locals = scan(cmd.body)
+      const unassigneds = locals.map(_ => unassigned)
+      if (!(A.length === 0))
+        push(A, { tag: 'env_i', env: E })
+      push(A, cmd.body)
+      E = extend(locals, unassigneds, E)
+    },
+  val:
+    cmd =>
+      push(A, { tag: 'lit', val: undefined },
+        { tag: 'pop_i' },
+        { tag: 'assmt', sym: cmd.sym, expr: cmd.expr }),
+  ret:
+    cmd =>
+      push(A, { tag: 'reset_i' }, cmd.expr),
+  fun:
+    cmd =>
+      push(A, {
+        tag: 'const',
+        sym: cmd.sym,
+        expr: { tag: 'lam', prms: cmd.prms, body: cmd.body }
+      }),
 
-  ThisExpression: function* (node: es.ThisExpression, context: Context) {
-    throw new Error(`not supported yet: ${node.type}`)
-  },
-
-  ArrayExpression: function* (node: es.ArrayExpression, context: Context) {
-    throw new Error(`not supported yet: ${node.type}`)
-  },
-
-
-  FunctionExpression: function* (node: es.FunctionExpression, context: Context) {
-    throw new Error(`not supported yet: ${node.type}`)
-  },
-
-  ArrowFunctionExpression: function* (node: es.ArrowFunctionExpression, context: Context) {
-    throw new Error(`not supported yet: ${node.type}`)
-  },
-
-  Identifier: function* (node: es.Identifier, context: Context) {
-    throw new Error(`not supported yet: ${node.type}`)
-  },
-
-  CallExpression: function* (node: es.CallExpression, context: Context) {
-    throw new Error(`not supported yet: ${node.type}`)
-  },
-
-  NewExpression: function* (node: es.NewExpression, context: Context) {
-    throw new Error(`not supported yet: ${node.type}`)
-  },
-
-  UnaryExpression: function* (node: es.UnaryExpression, context: Context) {
-    const value = yield* actualValue(node.argument, context)
-
-    const error = rttc.checkUnaryExpression(node, node.operator, value)
-    if (error) {
-      return handleRuntimeError(context, error)
-    }
-    return evaluateUnaryExpression(node.operator, value)
-  },
-
-  BinaryExpression: function* (node: es.BinaryExpression, context: Context) {
-    const left = yield* actualValue(node.left, context)
-    const right = yield* actualValue(node.right, context)
-    const error = rttc.checkBinaryExpression(node, node.operator, left, right)
-    if (error) {
-      return handleRuntimeError(context, error)
-    }
-    return evaluateBinaryExpression(node.operator, left, right)
-  },
-
-  ConditionalExpression: function* (node: es.ConditionalExpression, context: Context) {
-    throw new Error(`not supported yet: ${node.type}`)
-  },
-
-  LogicalExpression: function* (node: es.LogicalExpression, context: Context) {
-    throw new Error(`not supported yet: ${node.type}`)
-  },
-
-  VariableDeclaration: function* (node: es.VariableDeclaration, context: Context) {
-    throw new Error(`not supported yet: ${node.type}`)
-  },
-
-  ContinueStatement: function* (_node: es.ContinueStatement, _context: Context) {
-    throw new Error(`not supported yet: ${_node.type}`)
-  },
-
-  BreakStatement: function* (_node: es.BreakStatement, _context: Context) {
-    throw new Error(`not supported yet: ${_node.type}`)
-  },
-
-  ForStatement: function* (node: es.ForStatement, context: Context) {
-    throw new Error(`not supported yet: ${node.type}`)
-  },
-
-
-  AssignmentExpression: function* (node: es.AssignmentExpression, context: Context) {
-    throw new Error(`not supported yet: ${node.type}`)
-  },
-
-  FunctionDeclaration: function* (node: es.FunctionDeclaration, context: Context) {
-    throw new Error(`not supported yet: ${node.type}`)
-  },
-
-  IfStatement: function* (node: es.IfStatement | es.ConditionalExpression, context: Context) {
-    throw new Error(`not supported yet: ${node.type}`)
-  },
-
-  ExpressionStatement: function* (node: es.ExpressionStatement, context: Context) {
-    return yield* evaluate(node.expression, context)
-  },
-
-  ReturnStatement: function* (node: es.ReturnStatement, context: Context) {
-    throw new Error(`not supported yet: ${node.type}`)
-  },
-
-  WhileStatement: function* (node: es.WhileStatement, context: Context) {
-    throw new Error(`not supported yet: ${node.type}`)
-  },
-
-
-  BlockStatement: function* (node: es.BlockStatement, context: Context) {
-    throw new Error(`not supported yet: ${node.type}`)
-  },
-
-  Program: function* (node: es.BlockStatement, context: Context) {
-    const result = yield* forceIt(yield* evaluateBlockSatement(context, node), context);
-    return result;
-  }
+  //
+  // instructions
+  //
+  assmt_i:
+    // peek top of stash without popping:
+    // the value remains on the stash
+    // as the value of the assignment
+    cmd =>
+      assign(cmd.sym, peek(S), E),
+  unop_i:
+    cmd =>
+      push(S, apply_unop(cmd.sym, S.pop())),
+  binop_i:
+    cmd =>
+      push(S, apply_binop(cmd.sym, S.pop(), S.pop())),
+  pop_i:
+    _ =>
+      S.pop(),
+  app_i:
+    cmd => {
+      const arity = cmd.arity
+      const args: any[] = []
+      for (let i = arity - 1; i >= 0; i--)
+        args[i] = S.pop()
+      const sf = S.pop()
+      if (sf.tag === 'builtin')
+        return push(S, apply_builtin(sf.sym, args))
+      // remaining case: sf.tag === 'closure'
+      if (A.length === 0 || peek(A).tag === 'env_i') {
+        // current E not needed:
+        // just push mark, and not env_i
+        push(A, { tag: 'mark_i' })
+      } else if (peek(A).tag === 'reset_i') {
+        // tail call: 
+        // The callee's ret_i will push another reset_i
+        // which will go to the correct mark.
+        A.pop()
+        // The current E is not needed, because
+        // the following reset_i is the last body 
+        // instruction to be executed.
+      } else {
+        // general case:
+        // push current environment
+        push(A, { tag: 'env_i', env: E }, { tag: 'mark_i' })
+      }
+      push(A, sf.body)
+      E = extend(sf.prms, args, sf.env)
+    },
+  branch_i:
+    cmd =>
+      push(A, S.pop() ? cmd.cons : cmd.alt),
+  env_i:
+    cmd =>
+      E = cmd.env,
+  arr_acc_i:
+    cmd => {
+      const ind = S.pop()
+      const arr = S.pop()
+      push(S, arr[ind])
+    },
+  arr_len_i:
+    cmd => {
+      const arr = S.pop()
+      push(S, arr.length)
+    },
+  arr_lit_i:
+    cmd => {
+      const arity = cmd.arity
+      const array = S.slice(- arity - 1, S.length)
+      S = S.slice(0, - arity)
+      push(S, array)
+    },
+  arr_assmt_i:
+    cmd => {
+      const val = S.pop()
+      const ind = S.pop()
+      const arr = S.pop()
+      arr[ind] = val
+      push(S, val)
+    },
 }
-// tslint:enable:object-literal-shorthand
 
-export function* evaluate(node: es.Node, context: Context) {
-  const result = yield* evaluators[node.type](node, context)
-  yield* leave(context)
-  return result
+const step_limit = 1000000
+
+// tslint:enable:object-literal-shorthand
+export function* evaluate(node: any) {
+  // TODO: Put S, A, E and loop here?? (homework 3)
+  A = [node]
+  S = []
+  E = [global_environment]
+  let i = 0
+  while (i < step_limit) {
+    if (A.length === 0) break
+    const cmd = A.pop()
+    if (microcode.hasOwnProperty(cmd.tag)) {
+      microcode[cmd.tag](cmd)
+      //debug(cmd)
+    } else {
+      error("", "unknown command: " +
+        command_to_string(cmd))
+    }
+    i++
+  }
+  if (i === step_limit) {
+    error("step limit " + stringify(step_limit) + " exceeded")
+  }
+  if (S.length > 1 || S.length < 1) {
+    error(S, 'internal error: stash must be singleton but is: ')
+  }
+  return S[0]
+  // const result = yield* evaluators[node.type](node, context)
+  // yield* leave(context)
+  // return result
 }
