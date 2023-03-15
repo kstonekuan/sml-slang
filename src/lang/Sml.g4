@@ -116,7 +116,7 @@ variable: VAL name = IDENTIFIER EQUALS value = expression;
 function:
 	FUN name = IDENTIFIER (
 		identifierArg = IDENTIFIER
-		| identifierParenthesisArg = L_PAREN IDENTIFIER R_PAREN
+		| L_PAREN identifierParenthesisArg = IDENTIFIER R_PAREN
 		| identifierTupleArg = IDENTIFIER_TUPLE
 	) EQUALS body = expression;
 
@@ -140,7 +140,7 @@ list:
 lambda:
 	FN (
 		identifierArg = IDENTIFIER
-		| identifierParenthesisArg = L_PAREN IDENTIFIER R_PAREN
+		| L_PAREN identifierParenthesisArg = IDENTIFIER R_PAREN
 		| identifierTupleArg = IDENTIFIER_TUPLE
 	) DOUBLE_ARROW body = expression;
 

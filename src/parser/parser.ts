@@ -199,11 +199,12 @@ function contextToLocation(ctx: ExpressionContext): es.SourceLocation {
     return {
       tag: 'fun',
       name: ctx._name.text,
-      args: ctx._identifierArg.text === '' ? [ctx._identifierArg.text] : ctx._identifierParenthesisArg.text === '' ? [ctx._identifierParenthesisArg.text.] : ctx._identifierParenthesisArg.text.split(','),, 
+      args: ctx._identifierArg.text === '' ? [ctx._identifierArg.text] : ctx._identifierParenthesisArg.text === '' ? [ctx._identifierParenthesisArg.text] : ctx._identifierTupleArg.text, 
       body: ctx._body.text,
       loc: contextToLocation(ctx)
     }
   }
+  visit
       
 
   
@@ -255,15 +256,6 @@ function contextToLocation(ctx: ExpressionContext): es.SourceLocation {
       operator: ctx[0],
       left: ctx[1],
       right: ctx[2],
-      loc: contextToLocation(ctx)
-    }
-  }
-  visitFunction(ctx: FunctionContext): es.Expression {
-    return {
-      type: 'FunctionDeclaration',
-      id: ctx[0],
-      params: ctx[1],
-      body: ctx[2],
       loc: contextToLocation(ctx)
     }
   }
