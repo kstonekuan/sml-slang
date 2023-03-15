@@ -7,7 +7,7 @@ import { TerminalNode } from 'antlr4ts/tree/TerminalNode'
 import * as es from 'estree'
 
 import { SmlLexer } from '../lang/SmlLexer'
-import { BoolLiteralContext, CharLiteralContext, IntLiteralContext, LiteralExpressionContext, RealLiteralContext, SmlParser, StringLiteralContext, UnitLiteralContext } from "../lang/SmlParser";
+import { BoolLiteralContext, CharLiteralContext, IntLiteralContext, ListContext, LiteralContext, LiteralExpressionContext, LiteralListContext, NextPatternContext, NilListContext, RealLiteralContext, SmlParser, StringLiteralContext, UnitLiteralContext } from "../lang/SmlParser";
 import { IdentifierExpressionContext } from "../lang/SmlParser";
 import { TupleExpressionContext } from "../lang/SmlParser";
 import { ListExpressionContext } from "../lang/SmlParser";
@@ -37,6 +37,7 @@ import { TypeDefinitionContext } from "../lang/SmlParser";
 import { SmlVisitor } from '../lang/SmlVisitor'
 import { ParenthesesContext } from '../lang_calc/CalcParser'
 import { Context, ErrorSeverity, ErrorType, SourceError } from '../types'
+import { declaration } from '../utils/astCreator'
 import { stripIndent } from '../utils/formatters'
 import { binaryOp } from '../utils/operators'
 
@@ -137,7 +138,7 @@ function contextToLocation(ctx: ExpressionContext): es.SourceLocation {
     }
   }
 }
-  class ExpressionGenerator implements SmlVisitor<any> {
+class ExpressionGenerator implements SmlVisitor<any> {
   visitLiteralExpression(ctx: LiteralExpressionContext): any {
     return this.visit(ctx._body)
   }
@@ -176,7 +177,7 @@ function contextToLocation(ctx: ExpressionContext): es.SourceLocation {
   }
   visitStringLiteral(ctx: StringLiteralContext): any {
     return {
-      tag: 'string',
+      tag: 'str',
       val: ctx.text,
       loc: contextToLocation(ctx)
     }
@@ -199,74 +200,160 @@ function contextToLocation(ctx: ExpressionContext): es.SourceLocation {
     return {
       tag: 'fun',
       name: ctx._name.text,
-      args: ctx._identifierArg.text === '' ? [ctx._identifierArg.text] : ctx._identifierParenthesisArg.text === '' ? [ctx._identifierParenthesisArg.text] : ctx._identifierTupleArg.text, 
-      body: ctx._body.text,
+      args: ctx._identifierArg.text != '' ? ctx._identifierArg.text : ctx._identifierParenthesisArg.text != '' ? ctx._identifierParenthesisArg.text : ctx._identifierTupleArg.text, 
+      body: this.visit(ctx._body),
       loc: contextToLocation(ctx)
     }
   }
-  visit
-      
-
-  
-  
-  
-
-  visitParentheses(ctx: ParanthesesExpressionContext): es.Expression {
-    return this.visit(ctx.expression())
-  }
-  visitBinop(ctx: BinaryOperatorExpressionContext): es.Expression {
+  visitApplyExpression(ctx: ApplyExpressionContext): any {
     return {
-      type: 'BinaryExpression',
-      operator: SmlParser.BINOP[ctx._operator.type],
+      tag: 'app',
+      fun: ctx._identifierApply.text != '' ? ctx._identifierApply.text : this.visit(ctx._lambdaApply),    // TODO: struct
+      arg: this.visit(ctx._arg),
+      loc: contextToLocation(ctx)
+    }
+  }
+  visitLocalBlockDeclaration(ctx: LocalBlockDeclarationContext): any {
+    return {
+      tag: 'loc',
+      locals: ctx._declarations.map(declaration => this.visit(declaration)),
+      globals: ctx._body.map(declaration => this.visit(declaration)),
+      loc: contextToLocation(ctx)
+    }
+  }
+  visitIdentifierExpression(ctx: IdentifierExpressionContext): any {
+    return {
+      tag: 'nam',
+      name: ctx._name.text,
+      loc: contextToLocation(ctx)
+    }
+  }
+  visitDeclarationStatement(ctx: DeclarationStatementContext): any {
+    return this.visit(ctx._body)
+  }
+  visitDeclaration?(ctx: DeclarationContext): any | undefined
+  visitExpression?(ctx: ExpressionContext): any | undefined
+  visitLiteral?: ((ctx: LiteralContext) => any) | undefined
+  visitStart(ctx: StartContext): any {
+    return ctx._statements.map(statement => this.visit(statement))
+  }
+  visitStatement?(ctx: StatementContext): any | undefined
+  visitExpressionStatement(ctx: ExpressionStatementContext): any {
+    return this.visit(ctx._body)
+  }
+  visitParenthesesExpression(ctx: ParanthesesExpressionContext): any {
+    return this.visit(ctx._inner)
+  }
+  visitLiteralList(ctx: LiteralListContext): any {
+    return {
+      tag: 'lit_list',
+      first: this.visit(ctx._first),
+      val: ctx._rest.map(element => this.visit(element)),
+      loc: contextToLocation(ctx)
+    }
+  }
+  visitNilList(ctx: NilListContext): any {
+    return {
+      tag: 'nil_list',
+      first: ctx.text,    // nil
+      val: [],
+      loc: contextToLocation(ctx)
+    }
+  }
+  visitLambdaExpression(ctx: LambdaExpressionContext): any {
+    return this.visit(ctx._body)
+  }
+  visitLambda(ctx: LambdaContext): any {
+    return {
+      tag: 'lam',
+      args: ctx._identifierArg.text != '' ? ctx._identifierArg.text : ctx._identifierParenthesisArg.text != '' ? ctx._identifierParenthesisArg.text : ctx._identifierTupleArg.text, 
+      body: this.visit(ctx._body),
+      loc: contextToLocation(ctx)
+    }
+  }
+  visitBinaryOperatorExpression(ctx: BinaryOperatorExpressionContext): any {
+    return {
+      tag: 'binop',
+      op: ctx._operator.text,
       left: this.visit(ctx._left),
       right: this.visit(ctx._right),
       loc: contextToLocation(ctx)
     }
   }
-  visitUnop(ctx: UnaryOperatorExpressionContext): es.Expression {
+  visitUnaryOperatorExpression(ctx: UnaryOperatorExpressionContext): any {
     return {
-      type: 'UnaryExpression',
-      operator: SmlParser.UNOP[ctx._operator.type],
-      prefix: true,                         // Unary operators are always prefix
-      argument: this.visit(ctx._expr),
+      tag: 'unop',
+      op: ctx._operator.text,
+      expr: this.visit(ctx._expr),
       loc: contextToLocation(ctx)
     }
   }
-  visitIdentifier(ctx: IdentifierExpressionContext): es.Expression {
+  visitTupleExpression(ctx: TupleExpressionContext): any {
     return {
-      type: 'Identifier',
-      name: ctx.text,
+      tag: 'tuple',
+      first: this.visit(ctx._first),
+      val: ctx._rest.map(element => this.visit(element)),
       loc: contextToLocation(ctx)
     }
   }
-  visitConditionalExpression(ctx: ConditionalExpressionContext): es.Expression {
+  visitListExpression(ctx: ListExpressionContext): any {
+    return this.visit(ctx._body)
+  }
+  visitList?(ctx: ListContext): any | undefined
+  visitConditionalExpression(ctx: ConditionalExpressionContext): any {
     return {
-      type: 'ConditionalExpression',
-      test: this.visit(ctx._predicate),
-      consequent: this.visit(ctx._consequent),
-      alternate: this.visit(ctx._alternative),            // oh shit maybe indexing works
+      tag: 'cond_expr',
+      pred: this.visit(ctx._predicate),
+      cons: this.visit(ctx._consequent),
+      alt: this.visit(ctx._alternative),
+      loc: contextToLocation(ctx)
+    }
+  }
+  visitLetBlockExpression(ctx: LetBlockExpressionContext): any {
+    return {
+      tag: 'let',
+      declarations: ctx._declarations.map(declaration => this.visit(declaration)),
+      expr: this.visit(ctx._body),
+      loc: contextToLocation(ctx)
+    }
+  }
+  visitPatternMatchExpression(ctx: PatternMatchExpressionContext): any {
+    return {
+      tag: 'pat_match',
+      name: ctx._name.text,
+      first: this.visit(ctx._firstCase),
+      first_result: this.visit(ctx._firstResult),
+      rest: ctx._otherPatterns.map(pat => this.visit(pat)),
+      loc: contextToLocation(ctx)
+    }
+  }
+  visitNextPattern(ctx: NextPatternContext): any {
+    return {
+      tag: 'next_pat',
+      case: this.visit(ctx._nextCase),
+      result: this.visit(ctx._nextResult),
       loc: contextToLocation(ctx)
     }
   }
 
+
   
-  visitAssignment(ctx: AssignmentContext): es.Expression {
+  visitType(ctx: TypeContext): any {      // TODO: Check if this is correct
     return {
-      type: 'AssignmentExpression',
-      operator: ctx[0],
-      left: ctx[1],
-      right: ctx[2],
+      tag: 'type',
+      val: ctx.text,
       loc: contextToLocation(ctx)
     }
   }
-  visitFunctionCall(ctx: FunctionCallContext): es.Expression {
-    return {
-      type: 'CallExpression',
-      callee: ctx[0],
-      arguments: ctx[1],
-      loc: contextToLocation(ctx)
-    }
-  }
+
+
+
+
+      
+
+  
+  
+
 
   
 
@@ -312,8 +399,8 @@ function contextToLocation(ctx: ExpressionContext): es.SourceLocation {
   //   }
   // }
 
-  visitExpression?: ((ctx: ExpressionContext) => es.Expression) | undefined
-  visitStart?: ((ctx: StartContext) => es.Expression) | undefined
+  // visitExpression?: ((ctx: ExpressionContext) => es.Expression) | undefined
+  // visitStart?: ((ctx: StartContext) => es.Expression) | undefined
 
   visit(tree: ParseTree): es.Expression {
     return tree.accept(this)

@@ -105,7 +105,7 @@ LIST_CONCAT: '@';
 /*
  * Productions
  */
-start: statements = statement+;
+start: (statements += statement)+;
 
 statement:
 	body = declaration	# declarationStatement
@@ -121,9 +121,11 @@ function:
 	) EQUALS body = expression;
 
 declaration:
-	body = variable													# variableDeclaration
-	| body = function												# functionDeclaration
-	| LOCAL declarations = declaration+ IN body = declaration+ END	# localBlockDeclaration;
+	body = variable		# variableDeclaration
+	| body = function	# functionDeclaration
+	| LOCAL (declarations += declaration)+ IN (
+		body += declaration
+	)+ END # localBlockDeclaration;
 
 literal:
 	value = INT			# intLiteral
@@ -155,18 +157,23 @@ expression:
 		identifierApply = IDENTIFIER
 		| lambdaApply = lambda
 		| structNameApply = IDENTIFIER DOT structMethodApply = IDENTIFIER
-	) arg = expression											# applyExpression
-	| body = lambda												# lambdaExpression
-	| L_PAREN inner = expression R_PAREN						# paranthesesExpression
-	| left = expression operator = BINOP right = expression		# binaryOperatorExpression
-	| operator = UNOP expr = expression							# unaryOperatorExpression
-	| LET declarations = declaration+ IN body = expression END	# letBlockExpression
+	) arg = expression												# applyExpression
+	| body = lambda													# lambdaExpression
+	| L_PAREN inner = expression R_PAREN							# paranthesesExpression
+	| left = expression operator = BINOP right = expression			# binaryOperatorExpression
+	| operator = UNOP expr = expression								# unaryOperatorExpression
+	| LET (declarations += declaration)+ IN body = expression END	# letBlockExpression
 	| CASE name = IDENTIFIER OF firstCase = expression DOUBLE_ARROW firstResult = expression (
-		NEXT_PATTERN nextCase = expression DOUBLE_ARROW nextResult = expression
+		otherPatterns += nextPattern
 	)*												# patternMatchExpression
-	| name = IDENTIFIER DOT attribute = IDENTIFIER	# structAttributeExpression;
+	| name = IDENTIFIER DOT attribute = IDENTIFIER	# structAttributeExpression; // TODO
 // accessing a struct’s attribute
-type:
+
+// abstracted out of patternMatchExpression
+nextPattern:
+	NEXT_PATTERN nextCase = expression DOUBLE_ARROW nextResult = expression;
+
+type: // TODO			
 	TYPE_INT
 	| TYPE_REAL
 	| TYPE_BOOL
@@ -178,23 +185,23 @@ type:
 	| type SINGLE_ARROW type // function
 	| L_PAREN type R_PAREN;
 
-typeDefinition: VAL IDENTIFIER COLON type;
+typeDefinition: VAL IDENTIFIER COLON type; // TODO
 
-moduleSignature:
+moduleSignature: // TODO
 	SIGNATURE name = IDENTIFIER EQUALS SIG typeDefinition+ END;
 
-structBlock: STRUCT (variable | function)+ END;
+structBlock: STRUCT (variable | function)+ END; // TODO
 
-moduleStructure:
+moduleStructure: // TODO
 	STRUCTURE name = IDENTIFIER EQUALS (
 		structBlock
 		| functorApply
 	);
 
-functorApply:
+functorApply: // TODO
 	functorName = IDENTIFIER L_PAREN structName = IDENTIFIER R_PAREN;
 
-functorDef:
+functorDef: // TODO
 	FUNCTOR name = IDENTIFIER L_PAREN structName = IDENTIFIER COLON sigName = IDENTIFIER R_PAREN
 		EQUALS structBlock;
 

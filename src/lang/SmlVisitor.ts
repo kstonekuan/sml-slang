@@ -38,6 +38,7 @@ import { LiteralContext } from "./SmlParser";
 import { ListContext } from "./SmlParser";
 import { LambdaContext } from "./SmlParser";
 import { ExpressionContext } from "./SmlParser";
+import { NextPatternContext } from "./SmlParser";
 import { TypeContext } from "./SmlParser";
 import { TypeDefinitionContext } from "./SmlParser";
 import { ModuleSignatureContext } from "./SmlParser";
@@ -325,6 +326,13 @@ export interface SmlVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitExpression?: (ctx: ExpressionContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by `SmlParser.nextPattern`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitNextPattern?: (ctx: NextPatternContext) => Result;
 
 	/**
 	 * Visit a parse tree produced by `SmlParser.type`.

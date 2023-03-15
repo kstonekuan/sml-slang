@@ -38,6 +38,7 @@ import { LiteralContext } from "./SmlParser";
 import { ListContext } from "./SmlParser";
 import { LambdaContext } from "./SmlParser";
 import { ExpressionContext } from "./SmlParser";
+import { NextPatternContext } from "./SmlParser";
 import { TypeContext } from "./SmlParser";
 import { TypeDefinitionContext } from "./SmlParser";
 import { ModuleSignatureContext } from "./SmlParser";
@@ -488,6 +489,17 @@ export interface SmlListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitExpression?: (ctx: ExpressionContext) => void;
+
+	/**
+	 * Enter a parse tree produced by `SmlParser.nextPattern`.
+	 * @param ctx the parse tree
+	 */
+	enterNextPattern?: (ctx: NextPatternContext) => void;
+	/**
+	 * Exit a parse tree produced by `SmlParser.nextPattern`.
+	 * @param ctx the parse tree
+	 */
+	exitNextPattern?: (ctx: NextPatternContext) => void;
 
 	/**
 	 * Enter a parse tree produced by `SmlParser.type`.
