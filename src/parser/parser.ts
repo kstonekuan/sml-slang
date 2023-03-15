@@ -5,9 +5,9 @@ import { ParseTree } from 'antlr4ts/tree/ParseTree'
 import { RuleNode } from 'antlr4ts/tree/RuleNode'
 import { TerminalNode } from 'antlr4ts/tree/TerminalNode'
 import * as es from 'estree'
-import { SmlLexer } from '../lang/SmlLexer'
 
-import { LiteralExpressionContext, SmlParser } from "../lang/SmlParser";
+import { SmlLexer } from '../lang/SmlLexer'
+import { BoolLiteralContext, CharLiteralContext, IntLiteralContext, LiteralExpressionContext, RealLiteralContext, SmlParser, StringLiteralContext, UnitLiteralContext } from "../lang/SmlParser";
 import { IdentifierExpressionContext } from "../lang/SmlParser";
 import { TupleExpressionContext } from "../lang/SmlParser";
 import { ListExpressionContext } from "../lang/SmlParser";
@@ -29,13 +29,8 @@ import { StartContext } from "../lang/SmlParser";
 import { StatementContext } from "../lang/SmlParser";
 import { VariableContext } from "../lang/SmlParser";
 import { FunctionContext } from "../lang/SmlParser";
-import { LocalBlockContext } from "../lang/SmlParser";
 import { DeclarationContext } from "../lang/SmlParser";
-import { ConditionalContext } from "../lang/SmlParser";
-import { LetBlockContext } from "../lang/SmlParser";
-import { ApplyContext } from "../lang/SmlParser";
 import { LambdaContext } from "../lang/SmlParser";
-import { PatternMatchContext } from "../lang/SmlParser";
 import { ExpressionContext } from "../lang/SmlParser";
 import { TypeContext } from "../lang/SmlParser";
 import { TypeDefinitionContext } from "../lang/SmlParser";
@@ -142,14 +137,79 @@ function contextToLocation(ctx: ExpressionContext): es.SourceLocation {
     }
   }
 }
-class ExpressionGenerator implements SmlVisitor<es.Expression> {
-  visitLiteral(ctx: LiteralExpressionContext): es.Expression {   // for our PRIMITIVES
+  class ExpressionGenerator implements SmlVisitor<any> {
+  visitLiteralExpression(ctx: LiteralExpressionContext): any {
+    return this.visit(ctx._body)
+  }
+  visitIntLiteral(ctx: IntLiteralContext): any {
     return {
-      type: 'Literal',
-      value: ctx.text,
-      loc: contextToLocation(ctx)   // For troubleshooting
+      tag: 'lit',
+      val: parseInt(ctx.text)
     }
   }
+  visitRealLiteral(ctx: RealLiteralContext): any {
+    return {
+      tag: 'real',
+      val: parseFloat(ctx.text)
+    }
+  }
+  visitBoolLiteral(ctx: BoolLiteralContext): any {
+    return {
+      tag: 'bool',
+      val: ctx.text === 'true',
+      loc: contextToLocation(ctx)
+    }
+  }
+  visitUnitLiteral(ctx: UnitLiteralContext): any {
+    return {
+      tag: 'unit',
+      val: ctx.text,
+      loc: contextToLocation(ctx)
+    }
+  }
+  visitCharLiteral(ctx: CharLiteralContext): any {
+    return {
+      tag: 'char',
+      val: ctx.text,
+      loc: contextToLocation(ctx)
+    }
+  }
+  visitStringLiteral(ctx: StringLiteralContext): any {
+    return {
+      tag: 'string',
+      val: ctx.text,
+      loc: contextToLocation(ctx)
+    }
+  }
+  visitVariableDeclaration(ctx: VariableDeclarationContext): any {
+    return this.visit(ctx._body)
+  }
+  visitVariable(ctx: VariableContext): any {
+    return {
+      tag: 'var',
+      name: ctx._name.text,
+      value: ctx._value.text,
+      loc: contextToLocation(ctx)
+    }
+  }
+  visitFunctionDeclaration(ctx: FunctionDeclarationContext): any {
+    return this.visit(ctx._body)
+  }
+  visitFunction(ctx: FunctionContext): any {
+    return {
+      tag: 'fun',
+      name: ctx._name.text,
+      args: ctx._identifierArg.text === '' ? [ctx._identifierArg.text] : ctx._identifierParenthesisArg.text === '' ? [ctx._identifierParenthesisArg.text.] : ctx._identifierParenthesisArg.text.split(','),, 
+      body: ctx._body.text,
+      loc: contextToLocation(ctx)
+    }
+  }
+      
+
+  
+  
+  
+
   visitParentheses(ctx: ParanthesesExpressionContext): es.Expression {
     return this.visit(ctx.expression())
   }
@@ -183,18 +243,12 @@ class ExpressionGenerator implements SmlVisitor<es.Expression> {
       type: 'ConditionalExpression',
       test: this.visit(ctx._predicate),
       consequent: this.visit(ctx._consequent),
-      alternate: this.visit(ctx._alternate),            // oh shit maybe indexing works
+      alternate: this.visit(ctx._alternative),            // oh shit maybe indexing works
       loc: contextToLocation(ctx)
     }
   }
-  visitDeclaration(ctx: VariableDeclarationContext): es.Expression {
-    return {
-      type: 'AssignmentExpression',
-      operator: ctx[0],
-      kind: ctx[1],
-      loc: contextToLocation(ctx)
-    }
-  }
+
+  
   visitAssignment(ctx: AssignmentContext): es.Expression {
     return {
       type: 'AssignmentExpression',

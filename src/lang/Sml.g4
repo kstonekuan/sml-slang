@@ -97,26 +97,19 @@ IDENTIFIER_TUPLE:
 
 WHITESPACE: [ \r\n\t]+ -> skip;
 
-PRIMITIVE: INT | REAL | BOOL | UNIT | CHAR | STRING;
-LIST:
-	L_BRACKET PRIMITIVE (COMMA PRIMITIVE)* R_BRACKET
-	| LIST_NIL;
-
 // list are linked list that starts from head to tail
 LIST_NIL: 'nil';
 LIST_CONSTRUCT: '::';
 LIST_CONCAT: '@';
 
-TUPLE: L_PAREN PRIMITIVE (COMMA PRIMITIVE)* R_PAREN;
-
 /*
  * Productions
  */
-start: statement+;
+start: statements = statement+;
 
 statement:
-	declaration		# declarationStatement
-	| expression	# expressionStatement;
+	body = declaration	# declarationStatement
+	| body = expression	# expressionStatement;
 
 variable: VAL name = IDENTIFIER EQUALS value = expression;
 
@@ -127,26 +120,22 @@ function:
 		| identifierTupleArg = IDENTIFIER_TUPLE
 	) EQUALS body = expression;
 
-localBlock:
-	LOCAL declarations = declaration+ IN body = declaration+ END;
-
 declaration:
-	variable		# variableDeclaration
-	| function		# functionDeclaration
-	| localBlock	# localBlockDeclaration;
+	body = variable													# variableDeclaration
+	| body = function												# functionDeclaration
+	| LOCAL declarations = declaration+ IN body = declaration+ END	# localBlockDeclaration;
 
-conditional:
-	IF predicate = expression THEN consequent = expression ELSE alternative = expression;
+literal:
+	value = INT			# intLiteral
+	| value = REAL		# realLiteral
+	| value = BOOL		# boolLiteral
+	| value = UNIT		# unitLiteral
+	| value = CHAR		# charLiteral
+	| value = STRING	# stringLiteral;
 
-letBlock:
-	LET declarations = declaration+ IN body = expression END;
-
-apply:
-	(
-		identifierApply = IDENTIFIER
-		| lambdaApply = lambda
-		| structNameApply = IDENTIFIER DOT structMethodApply = IDENTIFIER
-	) arg = expression;
+list:
+	L_BRACKET first = literal (COMMA rest += literal)* R_BRACKET	# literalList
+	| LIST_NIL														# nilList;
 
 lambda:
 	FN (
@@ -155,26 +144,28 @@ lambda:
 		| identifierTupleArg = IDENTIFIER_TUPLE
 	) DOUBLE_ARROW body = expression;
 
-patternMatch:
-	CASE name = IDENTIFIER OF firstCase = expression DOUBLE_ARROW firstResult = expression (
-		NEXT_PATTERN nextCase = expression DOUBLE_ARROW nextResult = expression
-	)*;
-
 expression:
-	PRIMITIVE												# literalExpression
-	| IDENTIFIER											# identifierExpression
-	| TUPLE													# tupleExpression
-	| LIST													# listExpression
-	| conditional											# conditionalExpression
-	| apply													# applyExpression
-	| lambda												# lambdaExpression
-	| L_PAREN inner = expression R_PAREN					# paranthesesExpression
-	| left = expression operator = BINOP right = expression	# binaryOperatorExpression
-	| operator = UNOP expr = expression						# unaryOperatorExpression
-	| letBlock												# letBlockExpression
-	| patternMatch											# patternMatchExpression
-	| name = IDENTIFIER DOT attribute = IDENTIFIER			# structAttributeExpression;
-	// accessing a struct’s attribute
+	body = literal																			# literalExpression
+	| name = IDENTIFIER																		# identifierExpression
+	| L_PAREN first = literal (COMMA rest += literal)+ R_PAREN								# tupleExpression
+	| body = list																			# listExpression
+	| IF predicate = expression THEN consequent = expression ELSE alternative = expression	#
+		conditionalExpression
+	| (
+		identifierApply = IDENTIFIER
+		| lambdaApply = lambda
+		| structNameApply = IDENTIFIER DOT structMethodApply = IDENTIFIER
+	) arg = expression											# applyExpression
+	| body = lambda												# lambdaExpression
+	| L_PAREN inner = expression R_PAREN						# paranthesesExpression
+	| left = expression operator = BINOP right = expression		# binaryOperatorExpression
+	| operator = UNOP expr = expression							# unaryOperatorExpression
+	| LET declarations = declaration+ IN body = expression END	# letBlockExpression
+	| CASE name = IDENTIFIER OF firstCase = expression DOUBLE_ARROW firstResult = expression (
+		NEXT_PATTERN nextCase = expression DOUBLE_ARROW nextResult = expression
+	)*												# patternMatchExpression
+	| name = IDENTIFIER DOT attribute = IDENTIFIER	# structAttributeExpression;
+// accessing a struct’s attribute
 type:
 	TYPE_INT
 	| TYPE_REAL
@@ -192,9 +183,7 @@ typeDefinition: VAL IDENTIFIER COLON type;
 moduleSignature:
 	SIGNATURE name = IDENTIFIER EQUALS SIG typeDefinition+ END;
 
-structDeclaration: variable | function;
-
-structBlock: STRUCT structDeclaration+ END;
+structBlock: STRUCT (variable | function)+ END;
 
 moduleStructure:
 	STRUCTURE name = IDENTIFIER EQUALS (
