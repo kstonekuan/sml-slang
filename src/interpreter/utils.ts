@@ -43,10 +43,10 @@ const binop_microcode = {
 export const apply_binop = (op, v2, v1) => binop_microcode[op](v1, v2)
 
 const unop_microcode = {
-    '-unary': x => - x,
-    '!': x => is_boolean(x)
-        ? !x
-        : error(x, '! expects boolean, found:')
+    '~': x => - x,
+    // '!': x => is_boolean(x)
+    //     ? !x
+    //     : error(x, '! expects boolean, found:')
 }
 
 export const apply_unop = (op, v) => unop_microcode[op](v)
