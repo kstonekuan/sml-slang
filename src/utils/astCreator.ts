@@ -273,7 +273,7 @@ export const functionDeclarationExpression = (
   params: es.Pattern[],
   body: es.BlockStatement,
   loc?: es.SourceLocation | null
-): FunctionDeclarationExpression => ({
+): any => ({
   type: 'FunctionExpression',
   id,
   params,
@@ -295,9 +295,9 @@ export const functionDeclaration = (
 })
 
 export const blockExpression = (
-  body: es.Statement[],
-  loc?: es.SourceLocation | null
-): BlockExpression => ({
+  body: any[],
+  loc?: any
+): any => ({
   type: 'BlockExpression',
   body,
   loc

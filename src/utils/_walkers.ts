@@ -3,27 +3,26 @@ acorn.Node differs from estree.Node, so we have this file to handle the `as any`
  */
 
 import * as walkers from 'acorn-walk'
-import { Node } from 'estree'
-export type FullWalkerCallback<TState> = (node: Node, state: TState, type: string) => void
+export type FullWalkerCallback<TState> = (node: any, state: TState, type: string) => void
 
 type FullAncestorWalkerCallback<TState> = (
-  node: Node,
-  state: TState | Node[],
-  ancestors: Node[],
+  node: any,
+  state: TState | any[],
+  ancestors: any[],
   type: string
 ) => void
-export type WalkerCallback<TState> = (node: Node, state: TState, type?: string) => void
+export type WalkerCallback<TState> = (node: any, state: TState, type?: string) => void
 
-type SimpleWalkerFn<TState> = (node: Node, state: TState) => void
+type SimpleWalkerFn<TState> = (node: any, state: TState) => void
 
 export type AncestorWalkerFn<TState> = (
-  node: Node,
-  state: TState | Node[],
-  ancestors: Node[]
+  node: any,
+  state: TState | any[],
+  ancestors: any[]
 ) => void
 
 type RecursiveWalkerFn<TState> = (
-  node: Node,
+  node: any,
   state: TState,
   callback: WalkerCallback<TState>
 ) => void
@@ -40,43 +39,43 @@ interface RecursiveVisitors<TState> {
   [type: string]: RecursiveWalkerFn<TState>
 }
 
-type FindPredicate = (type: string, node: Node) => boolean
+type FindPredicate = (type: string, node: any) => boolean
 
 interface Found<TState> {
-  node: Node
+  node: any
   state: TState
 }
 
 export const simple: <TState>(
-  node: Node,
+  node: any,
   visitors: SimpleVisitors<TState>,
   base?: RecursiveVisitors<TState>,
   state?: TState
 ) => void = walkers.simple as any
 
 export const ancestor: <TState>(
-  node: Node,
+  node: any,
   visitors: AncestorVisitors<TState>,
   base?: RecursiveVisitors<TState>,
   state?: TState
 ) => void = walkers.ancestor as any
 
 export const recursive: <TState>(
-  node: Node,
+  node: any,
   state: TState,
   functions: RecursiveVisitors<TState>,
   base?: RecursiveVisitors<TState>
 ) => void = walkers.recursive as any
 
 export const full: <TState>(
-  node: Node,
+  node: any,
   callback: FullWalkerCallback<TState>,
   base?: RecursiveVisitors<TState>,
   state?: TState
 ) => void = walkers.full as any
 
 export const fullAncestor: <TState>(
-  node: Node,
+  node: any,
   callback: FullAncestorWalkerCallback<TState>,
   base?: RecursiveVisitors<TState>,
   state?: TState
@@ -88,7 +87,7 @@ export const make: <TState>(
 ) => RecursiveVisitors<TState> = walkers.make as any
 
 export const findNodeAt: <TState>(
-  node: Node,
+  node: any,
   start: number | undefined,
   end: number | undefined,
   type?: FindPredicate,

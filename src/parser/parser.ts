@@ -4,10 +4,10 @@ import { ErrorNode } from 'antlr4ts/tree/ErrorNode'
 import { ParseTree } from 'antlr4ts/tree/ParseTree'
 import { RuleNode } from 'antlr4ts/tree/RuleNode'
 import { TerminalNode } from 'antlr4ts/tree/TerminalNode'
-import * as es from 'estree'
+import { display } from 'sicp'
 
 import { SmlLexer } from '../lang/SmlLexer'
-import { BoolLiteralContext, CharLiteralContext, IntLiteralContext, ListContext, LiteralContext, LiteralExpressionContext, LiteralListContext, NextPatternContext, NilListContext, RealLiteralContext, SmlParser, StringLiteralContext, UnitLiteralContext } from "../lang/SmlParser";
+import { BinopContext, BoolExpressionContext, CharExpressionContext, ExpressionListContext, IntExpressionContext, ListContext, NextPatternContext, NilListContext, RealExpressionContext, SmlParser, StringExpressionContext, UnitExpressionContext, UnopContext } from "../lang/SmlParser";
 import { IdentifierExpressionContext } from "../lang/SmlParser";
 import { TupleExpressionContext } from "../lang/SmlParser";
 import { ListExpressionContext } from "../lang/SmlParser";
@@ -46,7 +46,7 @@ export class DisallowedConstructError implements SourceError {
   public severity = ErrorSeverity.ERROR
   public nodeType: string
 
-  constructor(public node: es.Node) {
+  constructor(public node: any) {
     this.nodeType = this.formatNodeType(this.node.type)
   }
 
@@ -87,7 +87,7 @@ export class DisallowedConstructError implements SourceError {
 export class FatalSyntaxError implements SourceError {
   public type = ErrorType.SYNTAX
   public severity = ErrorSeverity.ERROR
-  public constructor(public location: es.SourceLocation, public message: string) {}
+  public constructor(public location: any, public message: string) { }
 
   public explain() {
     return this.message
@@ -101,7 +101,7 @@ export class FatalSyntaxError implements SourceError {
 export class MissingSemicolonError implements SourceError {
   public type = ErrorType.SYNTAX
   public severity = ErrorSeverity.ERROR
-  public constructor(public location: es.SourceLocation) {}
+  public constructor(public location: any) { }
 
   public explain() {
     return 'Missing semicolon at the end of statement'
@@ -115,7 +115,7 @@ export class MissingSemicolonError implements SourceError {
 export class TrailingCommaError implements SourceError {
   public type: ErrorType.SYNTAX
   public severity: ErrorSeverity.WARNING
-  public constructor(public location: es.SourceLocation) {}
+  public constructor(public location: any) { }
 
   public explain() {
     return 'Trailing comma'
@@ -126,7 +126,7 @@ export class TrailingCommaError implements SourceError {
   }
 }
 
-function contextToLocation(ctx: ExpressionContext): es.SourceLocation {
+function contextToLocation(ctx: ExpressionContext): any {
   return {
     start: {
       line: ctx.start.line,
@@ -139,46 +139,52 @@ function contextToLocation(ctx: ExpressionContext): es.SourceLocation {
   }
 }
 class ExpressionGenerator implements SmlVisitor<any> {
-  visitLiteralExpression(ctx: LiteralExpressionContext): any {
-    return this.visit(ctx._body)
-  }
-  visitIntLiteral(ctx: IntLiteralContext): any {
+
+  visitIntExpression(ctx: IntExpressionContext): any {
     return {
       tag: 'lit',
-      val: parseInt(ctx.text)
+      val: parseInt(ctx.text),
+      type: 'int',
+      loc: contextToLocation(ctx)
     }
   }
-  visitRealLiteral(ctx: RealLiteralContext): any {
+  visitRealExpression(ctx: RealExpressionContext): any {
     return {
-      tag: 'real',
-      val: parseFloat(ctx.text)
+      tag: 'lit',
+      val: parseFloat(ctx.text),
+      type: 'real',
+      loc: contextToLocation(ctx)
     }
   }
-  visitBoolLiteral(ctx: BoolLiteralContext): any {
+  visitBoolExpression(ctx: BoolExpressionContext): any {
     return {
-      tag: 'bool',
+      tag: 'lit',
       val: ctx.text === 'true',
+      type: 'bool',
       loc: contextToLocation(ctx)
     }
   }
-  visitUnitLiteral(ctx: UnitLiteralContext): any {
+  visitUnitExpression(ctx: UnitExpressionContext): any {
     return {
-      tag: 'unit',
+      tag: 'lit',
       val: ctx.text,
+      type: 'unit',
       loc: contextToLocation(ctx)
     }
   }
-  visitCharLiteral(ctx: CharLiteralContext): any {
+  visitCharExpression(ctx: CharExpressionContext): any {
     return {
-      tag: 'char',
+      tag: 'lit',
       val: ctx.text,
+      type: 'char',
       loc: contextToLocation(ctx)
     }
   }
-  visitStringLiteral(ctx: StringLiteralContext): any {
+  visitStringExpression(ctx: StringExpressionContext): any {
     return {
-      tag: 'str',
+      tag: 'lit',
       val: ctx.text,
+      type: 'string',
       loc: contextToLocation(ctx)
     }
   }
@@ -188,8 +194,8 @@ class ExpressionGenerator implements SmlVisitor<any> {
   visitVariable(ctx: VariableContext): any {
     return {
       tag: 'var',
-      name: ctx._name.text,
-      value: ctx._value.text,
+      sym: ctx._name.text,
+      expr: ctx._value.text,
       loc: contextToLocation(ctx)
     }
   }
@@ -199,8 +205,8 @@ class ExpressionGenerator implements SmlVisitor<any> {
   visitFunction(ctx: FunctionContext): any {
     return {
       tag: 'fun',
-      name: ctx._name.text,
-      args: ctx._identifierArg.text != '' ? ctx._identifierArg.text : ctx._identifierParenthesisArg.text != '' ? ctx._identifierParenthesisArg.text : ctx._identifierTupleArg.text, 
+      sym: ctx._name.text,
+      prms: ctx._identifierArg.text != '' ? ctx._identifierArg.text : ctx._identifierParenthesisArg.text != '' ? ctx._identifierParenthesisArg.text : ctx._identifierTupleArg.text,
       body: this.visit(ctx._body),
       loc: contextToLocation(ctx)
     }
@@ -209,7 +215,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
     return {
       tag: 'app',
       fun: ctx._identifierApply.text != '' ? ctx._identifierApply.text : this.visit(ctx._lambdaApply),    // TODO: struct
-      arg: this.visit(ctx._arg),
+      args: this.visit(ctx._arg),
       loc: contextToLocation(ctx)
     }
   }
@@ -224,7 +230,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
   visitIdentifierExpression(ctx: IdentifierExpressionContext): any {
     return {
       tag: 'nam',
-      name: ctx._name.text,
+      sym: ctx.text,
       loc: contextToLocation(ctx)
     }
   }
@@ -233,8 +239,8 @@ class ExpressionGenerator implements SmlVisitor<any> {
   }
   visitDeclaration?(ctx: DeclarationContext): any | undefined
   visitExpression?(ctx: ExpressionContext): any | undefined
-  visitLiteral?: ((ctx: LiteralContext) => any) | undefined
   visitStart(ctx: StartContext): any {
+    display(ctx._statements, "StartContext -> _statements: ")
     return ctx._statements.map(statement => this.visit(statement))
   }
   visitStatement?(ctx: StatementContext): any | undefined
@@ -244,19 +250,20 @@ class ExpressionGenerator implements SmlVisitor<any> {
   visitParenthesesExpression(ctx: ParanthesesExpressionContext): any {
     return this.visit(ctx._inner)
   }
-  visitLiteralList(ctx: LiteralListContext): any {
+  visitExpressionList(ctx: ExpressionListContext): any {
+    const elems = ctx._rest.map(element => this.visit(element))
+    elems.unshift(this.visit(ctx._first))
+    elems.reverse()
     return {
       tag: 'lit_list',
-      first: this.visit(ctx._first),
-      val: ctx._rest.map(element => this.visit(element)),
+      elems: elems,
       loc: contextToLocation(ctx)
     }
   }
   visitNilList(ctx: NilListContext): any {
     return {
       tag: 'nil_list',
-      first: ctx.text,    // nil
-      val: [],
+      elems: [],
       loc: contextToLocation(ctx)
     }
   }
@@ -266,28 +273,36 @@ class ExpressionGenerator implements SmlVisitor<any> {
   visitLambda(ctx: LambdaContext): any {
     return {
       tag: 'lam',
-      args: ctx._identifierArg.text != '' ? ctx._identifierArg.text : ctx._identifierParenthesisArg.text != '' ? ctx._identifierParenthesisArg.text : ctx._identifierTupleArg.text, 
+      prms: ctx._identifierArg.text != '' ? ctx._identifierArg.text : ctx._identifierParenthesisArg.text != '' ? ctx._identifierParenthesisArg.text : ctx._identifierTupleArg.text,
       body: this.visit(ctx._body),
       loc: contextToLocation(ctx)
     }
   }
   visitBinaryOperatorExpression(ctx: BinaryOperatorExpressionContext): any {
+    display(ctx._operator.text, "BinaryOperatorExpression -> _operator.text: ")
     return {
       tag: 'binop',
-      op: ctx._operator.text,
-      left: this.visit(ctx._left),
-      right: this.visit(ctx._right),
+      sym: this.visit(ctx._operator),
+      frst: this.visit(ctx._left),
+      scnd: this.visit(ctx._right),
       loc: contextToLocation(ctx)
     }
+  }
+  visitBinop(ctx: BinopContext): any {
+    return ctx.text
   }
   visitUnaryOperatorExpression(ctx: UnaryOperatorExpressionContext): any {
     return {
       tag: 'unop',
-      op: ctx._operator.text,
-      expr: this.visit(ctx._expr),
+      sym: this.visit(ctx._operator),
+      frst: this.visit(ctx._expr),
       loc: contextToLocation(ctx)
     }
   }
+  visitUnop(ctx: UnopContext): any {
+    return ctx.text
+  }
+  
   visitTupleExpression(ctx: TupleExpressionContext): any {
     return {
       tag: 'tuple',
@@ -337,7 +352,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
   }
 
 
-  
+
   visitType(ctx: TypeContext): any {      // TODO: Check if this is correct
     return {
       tag: 'type',
@@ -349,19 +364,19 @@ class ExpressionGenerator implements SmlVisitor<any> {
 
 
 
-      
-
-  
-  
-
-
-  
-
-  
 
 
 
-  // visitMultiplication(ctx: MultiplicationContext): es.Expression {
+
+
+
+
+
+
+
+
+
+  // visitMultiplication(ctx: MultiplicationContext): any {
   //   return {
   //     type: 'BinaryExpression',
   //     operator: '*',
@@ -370,7 +385,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
   //     loc: contextToLocation(ctx)
   //   }
   // }
-  // visitDivision(ctx: DivisionContext): es.Expression {
+  // visitDivision(ctx: DivisionContext): any {
   //   return {
   //     type: 'BinaryExpression',
   //     operator: '/',
@@ -379,7 +394,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
   //     loc: contextToLocation(ctx)
   //   }
   // }
-  // visitAddition(ctx: AdditionContext): es.Expression {
+  // visitAddition(ctx: AdditionContext): any {
   //   return {
   //     type: 'BinaryExpression',
   //     operator: '+',
@@ -389,7 +404,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
   //   }
   // }
 
-  // visitSubtraction(ctx: SubtractionContext): es.Expression {
+  // visitSubtraction(ctx: SubtractionContext): any {
   //   return {
   //     type: 'BinaryExpression',
   //     operator: '-',
@@ -399,27 +414,27 @@ class ExpressionGenerator implements SmlVisitor<any> {
   //   }
   // }
 
-  // visitExpression?: ((ctx: ExpressionContext) => es.Expression) | undefined
-  // visitStart?: ((ctx: StartContext) => es.Expression) | undefined
+  // visitExpression?: ((ctx: ExpressionContext) => any) | undefined
+  // visitStart?: ((ctx: StartContext) => any) | undefined
 
-  visit(tree: ParseTree): es.Expression {
+  visit(tree: ParseTree): any {
     return tree.accept(this)
   }
-  visitChildren(node: RuleNode): es.Expression {
-    const expressions: es.Expression[] = []
+  visitChildren(node: RuleNode): any {
+    const expressions: any[] = []
     for (let i = 0; i < node.childCount; i++) {
       expressions.push(node.getChild(i).accept(this))
     }
     return {
-      type: 'SequenceExpression',
-      expressions
+      tag: 'seq',
+      stmts: expressions,
     }
   }
-  visitTerminal(node: TerminalNode): es.Expression {
-    return node.accept(this)
+  visitTerminal(node: TerminalNode): any {
+    return undefined
   }
 
-  visitErrorNode(node: ErrorNode): es.Expression {
+  visitErrorNode(node: ErrorNode): any {
     throw new FatalSyntaxError(
       {
         start: {
@@ -486,50 +501,49 @@ class ExpressionGenerator implements SmlVisitor<any> {
 //   }
 // }
 
-function convertExpression(expression: ExpressionContext): es.Expression {
+function convertTree(tree: StartContext): any {
   const generator = new ExpressionGenerator()
-  return expression.accept(generator)
+  return tree.accept(generator)
 }
 
-function convertSource(expression: ExpressionContext): es.Program {
+function convertSource(tree: StartContext): any {
   return {
     type: 'Program',
     sourceType: 'script',
     body: [
       {
-        type: 'ExpressionStatement',
-        expression: convertExpression(expression)
+        tag: 'seq',
+        stmts: convertTree(tree)
       }
     ]
   }
 }
 
 export function parse(source: string, context: Context) {
-  let program: es.Program | undefined
+  let program: any | undefined
 
-  if (context.variant === 'calc') {
-    const inputStream = CharStreams.fromString(source)
-    const lexer = new SmlLexer(inputStream)
-    const tokenStream = new CommonTokenStream(lexer)
-    const parser = new SmlParser(tokenStream)
-    parser.buildParseTree = true
-    try {
-      const tree = parser.expression()
-      program = convertSource(tree)
-    } catch (error) {
-      if (error instanceof FatalSyntaxError) {
-        context.errors.push(error)
-      } else {
-        throw error
-      }
-    }
-    const hasErrors = context.errors.find(m => m.severity === ErrorSeverity.ERROR)
-    if (program && !hasErrors) {
-      return program
+  display(source, "Source string: ")
+
+  const inputStream = CharStreams.fromString(source)
+  const lexer = new SmlLexer(inputStream)
+  const tokenStream = new CommonTokenStream(lexer)
+  const parser = new SmlParser(tokenStream)
+  parser.buildParseTree = true
+  try {
+    const tree = parser.start()
+    program = convertSource(tree)
+  } catch (error) {
+    if (error instanceof FatalSyntaxError) {
+      context.errors.push(error)
     } else {
-      return undefined
+      throw error
     }
+  }
+  const hasErrors = context.errors.find(m => m.severity === ErrorSeverity.ERROR)
+  if (program && !hasErrors) {
+    return program
   } else {
     return undefined
   }
+
 }

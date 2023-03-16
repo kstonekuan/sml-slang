@@ -24,17 +24,17 @@ export function HighlightRulesSelector(
   external: String = 'NONE',
   externalLibraries: (
     | {
-        caption: string
-        value: string
-        meta: any
-        docHTML: any
-      }
+      caption: string
+      value: string
+      meta: any
+      docHTML: any
+    }
     | {
-        caption: string
-        value: string
-        meta: string
-        docHTML?: undefined
-      }
+      caption: string
+      value: string
+      meta: string
+      docHTML?: undefined
+    }
   )[] = []
 ) {
   // @ts-ignore
@@ -83,7 +83,7 @@ export function HighlightRulesSelector(
     }
 
     const ChapterKeywordSelector = () => {
-      const output = []
+      const output: any[] = []
       if (id >= 1) {
         output.push('import', 'const', 'else', 'if', 'return', 'function', 'debugger')
       }
@@ -735,87 +735,87 @@ export function ModeSelector(
       this.foldingRules = new CStyleFoldMode()
     }
     oop.inherits(Mode, TextMode)
-    ;(function () {
-      // @ts-ignore
-      this.lineCommentStart = '//'
-      // @ts-ignore
-      this.blockComment = { start: '/*', end: '*/' }
-      // @ts-ignore
-      this.$quotes = { '"': '"', "'": "'", '`': '`' }
+      ; (function () {
+        // @ts-ignore
+        this.lineCommentStart = '//'
+        // @ts-ignore
+        this.blockComment = { start: '/*', end: '*/' }
+        // @ts-ignore
+        this.$quotes = { '"': '"', "'": "'", '`': '`' }
 
-      // @ts-ignore
-      this.getNextLineIndent = function (state, line, tab) {
-        let indent = this.$getIndent(line)
+        // @ts-ignore
+        this.getNextLineIndent = function (state, line, tab) {
+          let indent = this.$getIndent(line)
 
-        const tokenizedLine = this.getTokenizer().getLineTokens(line, state)
-        const tokens = tokenizedLine.tokens
-        const endState = tokenizedLine.state
+          const tokenizedLine = this.getTokenizer().getLineTokens(line, state)
+          const tokens = tokenizedLine.tokens
+          const endState = tokenizedLine.state
 
-        if (tokens.length && tokens[tokens.length - 1].type == 'comment') {
+          if (tokens.length && tokens[tokens.length - 1].type == 'comment') {
+            return indent
+          }
+
+          if (state == 'start' || state == 'no_regex') {
+            const match = line.match(/^.*(?:\bcase\b.*:|[\{\(\[])\s*$/)
+            if (match) {
+              indent += tab
+            }
+          } else if (state == 'doc-start') {
+            if (endState == 'start' || endState == 'no_regex') {
+              return ''
+            }
+            const match = line.match(/^\s*(\/?)\*/)
+            if (match) {
+              if (match[1]) {
+                indent += ' '
+              }
+              indent += '* '
+            }
+          }
+
           return indent
         }
 
-        if (state == 'start' || state == 'no_regex') {
-          const match = line.match(/^.*(?:\bcase\b.*:|[\{\(\[])\s*$/)
-          if (match) {
-            indent += tab
-          }
-        } else if (state == 'doc-start') {
-          if (endState == 'start' || endState == 'no_regex') {
-            return ''
-          }
-          const match = line.match(/^\s*(\/?)\*/)
-          if (match) {
-            if (match[1]) {
-              indent += ' '
-            }
-            indent += '* '
-          }
+        // @ts-ignore
+        this.checkOutdent = function (state, line, input) {
+          return this.$outdent.checkOutdent(line, input)
         }
 
-        return indent
-      }
+        // @ts-ignore
+        this.autoOutdent = function (state, doc, row) {
+          this.$outdent.autoOutdent(doc, row)
+        }
 
-      // @ts-ignore
-      this.checkOutdent = function (state, line, input) {
-        return this.$outdent.checkOutdent(line, input)
-      }
+        // This is the JSHint background worker. Disabled because it is of little
+        // utility to Source, and produced many false positives.
+        // If this is ever enabled again: the *frontend* needs to provide the URL of
+        // the worker to Ace:
+        //
+        // import jsWorkerUrl from "file-loader!ace-builds/src-noconflict/javascript_worker";
+        // ace.config.setModuleUrl("ace/mode/javascript_worker", jsWorkerUrl)
+        //
+        // Note: some lint disabling may be needed for the above
 
-      // @ts-ignore
-      this.autoOutdent = function (state, doc, row) {
-        this.$outdent.autoOutdent(doc, row)
-      }
+        // // @ts-ignore
+        // this.createWorker = function (session) {
+        //   const worker = new WorkerClient(["ace"], "ace/mode/javascript_worker", "JavaScriptWorker");
+        //   worker.attachToDocument(session.getDocument())
+        //
+        //   // @ts-ignore
+        //   worker.on('annotate', function (results) {
+        //     session.setAnnotations(results.data)
+        //   })
+        //
+        //   worker.on('terminate', function () {
+        //     session.clearAnnotations()
+        //   })
+        //
+        //   return worker
+        // }
 
-      // This is the JSHint background worker. Disabled because it is of little
-      // utility to Source, and produced many false positives.
-      // If this is ever enabled again: the *frontend* needs to provide the URL of
-      // the worker to Ace:
-      //
-      // import jsWorkerUrl from "file-loader!ace-builds/src-noconflict/javascript_worker";
-      // ace.config.setModuleUrl("ace/mode/javascript_worker", jsWorkerUrl)
-      //
-      // Note: some lint disabling may be needed for the above
-
-      // // @ts-ignore
-      // this.createWorker = function (session) {
-      //   const worker = new WorkerClient(["ace"], "ace/mode/javascript_worker", "JavaScriptWorker");
-      //   worker.attachToDocument(session.getDocument())
-      //
-      //   // @ts-ignore
-      //   worker.on('annotate', function (results) {
-      //     session.setAnnotations(results.data)
-      //   })
-      //
-      //   worker.on('terminate', function () {
-      //     session.clearAnnotations()
-      //   })
-      //
-      //   return worker
-      // }
-
-      // @ts-ignore
-      this.$id = 'ace/mode/source' + name
-    }.call(Mode.prototype))
+        // @ts-ignore
+        this.$id = 'ace/mode/source' + name
+      }.call(Mode.prototype))
 
     exports.Mode = Mode
   }

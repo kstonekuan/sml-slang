@@ -1,4 +1,3 @@
-import es from 'estree'
 import * as path from 'path'
 
 import { CannotFindModuleError, CircularImportError } from '../errors/localImportErrors'
@@ -35,7 +34,7 @@ import { isImportDeclaration, isModuleDeclaration } from './typeGuards'
  * @param currentFilePath The file path of the current file.
  */
 export const getImportedLocalModulePaths = (
-  program: es.Program,
+  program: any,
   currentFilePath: string
 ): Set<string> => {
   if (!path.isAbsolute(currentFilePath)) {
@@ -45,7 +44,7 @@ export const getImportedLocalModulePaths = (
   const baseFilePath = path.resolve(currentFilePath, '..')
   const importedLocalModuleNames: Set<string> = new Set()
   const importDeclarations = program.body.filter(isImportDeclaration)
-  importDeclarations.forEach((importDeclaration: es.ImportDeclaration): void => {
+  importDeclarations.forEach((importDeclaration: any): void => {
     const modulePath = importDeclaration.source.value
     if (typeof modulePath !== 'string') {
       throw new Error('Module names must be strings.')
@@ -63,10 +62,10 @@ const parseProgramsAndConstructImportGraph = (
   entrypointFilePath: string,
   context: Context
 ): {
-  programs: Record<string, es.Program>
+  programs: Record<string, any>
   importGraph: DirectedGraph
 } => {
-  const programs: Record<string, es.Program> = {}
+  const programs: Record<string, any> = {}
   const importGraph = new DirectedGraph()
 
   const parseFile = (currentFilePath: string): void => {
@@ -121,11 +120,11 @@ const parseProgramsAndConstructImportGraph = (
   }
 }
 
-const getSourceModuleImports = (programs: Record<string, es.Program>): es.ImportDeclaration[] => {
-  const sourceModuleImports: es.ImportDeclaration[] = []
-  Object.values(programs).forEach((program: es.Program): void => {
+const getSourceModuleImports = (programs: Record<string, any>): any[] => {
+  const sourceModuleImports: any[] = []
+  Object.values(programs).forEach((program: any): void => {
     const importDeclarations = program.body.filter(isImportDeclaration)
-    importDeclarations.forEach((importDeclaration: es.ImportDeclaration): void => {
+    importDeclarations.forEach((importDeclaration: any): void => {
       const importSource = importDeclaration.source.value
       if (typeof importSource !== 'string') {
         throw new Error('Module names must be strings.')
@@ -159,7 +158,7 @@ const preprocessFileImports = (
   files: Partial<Record<string, string>>,
   entrypointFilePath: string,
   context: Context
-): es.Program | undefined => {
+): any | undefined => {
   // Parse all files into ASTs and build the import graph.
   const { programs, importGraph } = parseProgramsAndConstructImportGraph(
     files,
@@ -196,7 +195,7 @@ const preprocessFileImports = (
 
   // Transform all programs into their equivalent function declaration
   // except for the entrypoint program.
-  const functionDeclarations: Record<string, es.FunctionDeclaration> = {}
+  const functionDeclarations: Record<string, any> = {}
   for (const [filePath, program] of Object.entries(programs)) {
     // The entrypoint program does not need to be transformed into its
     // function declaration equivalent as its enclosing environment is
@@ -217,7 +216,7 @@ const preprocessFileImports = (
   }
 
   // Invoke each of the transformed functions and store the result in a variable.
-  const invokedFunctionResultVariableDeclarations: es.VariableDeclaration[] = []
+  const invokedFunctionResultVariableDeclarations: any[] = []
   topologicalOrderResult.topologicalOrder.forEach((filePath: string): void => {
     // As mentioned above, the entrypoint program does not have a function
     // declaration equivalent, so there is no need to process it.
@@ -249,7 +248,7 @@ const preprocessFileImports = (
   const sourceModuleImports = getSourceModuleImports(programs)
 
   // Re-assemble the program.
-  const preprocessedProgram: es.Program = {
+  const preprocessedProgram: any = {
     ...entrypointProgram,
     body: [
       ...sourceModuleImports,

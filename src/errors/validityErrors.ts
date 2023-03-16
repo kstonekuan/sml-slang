@@ -1,4 +1,3 @@
-import * as es from 'estree'
 
 import { ErrorSeverity, ErrorType, SourceError } from '../types'
 
@@ -6,7 +5,7 @@ export class NoAssignmentToForVariable implements SourceError {
   public type = ErrorType.SYNTAX
   public severity = ErrorSeverity.ERROR
 
-  constructor(public node: es.AssignmentExpression) {}
+  constructor(public node: any) { }
 
   get location() {
     return this.node.loc!

@@ -1,23 +1,22 @@
-import * as es from 'estree'
 
 import { ConstAssignment } from '../errors/errors'
-import { NoAssignmentToForVariable } from '../errors/validityErrors'
+// import { NoAssignmentToForVariable } from '../errors/validityErrors'
 import { Context, NodeWithInferredType } from '../types'
 import { getVariableDecarationName } from '../utils/astCreator'
-import { ancestor, base, FullWalkerCallback } from '../utils/walkers'
+// import { ancestor, base, FullWalkerCallback } from '../utils/walkers'
 
 class Declaration {
   public accessedBeforeDeclaration: boolean = false
-  constructor(public isConstant: boolean) {}
+  constructor(public isConstant: boolean) { }
 }
 
 export function validateAndAnnotate(
-  program: es.Program,
+  program: any,
   context: Context
-): NodeWithInferredType<es.Program> {
-  const accessedBeforeDeclarationMap = new Map<es.Node, Map<string, Declaration>>()
-  const scopeHasCallExpressionMap = new Map<es.Node, boolean>()
-  function processBlock(node: es.Program | es.BlockStatement) {
+): NodeWithInferredType<any> {
+  const accessedBeforeDeclarationMap = new Map<any, Map<string, Declaration>>()
+  const scopeHasCallExpressionMap = new Map<any, boolean>()
+  function processBlock(node: any) {
     const initialisedIdentifiers = new Map<string, Declaration>()
     for (const statement of node.body) {
       if (statement.type === 'VariableDeclaration') {
@@ -37,35 +36,35 @@ export function validateAndAnnotate(
     scopeHasCallExpressionMap.set(node, false)
     accessedBeforeDeclarationMap.set(node, initialisedIdentifiers)
   }
-  function processFunction(node: es.FunctionDeclaration | es.ArrowFunctionExpression) {
+  function processFunction(node: any) {
     accessedBeforeDeclarationMap.set(
       node,
-      new Map((node.params as es.Identifier[]).map(id => [id.name, new Declaration(false)]))
+      new Map((node.params as any[]).map(id => [id.name, new Declaration(false)]))
     )
     scopeHasCallExpressionMap.set(node, false)
   }
 
   // initialise scope of variables
-  ancestor(program as es.Node, {
-    Program: processBlock,
-    BlockStatement: processBlock,
-    FunctionDeclaration: processFunction,
-    ArrowFunctionExpression: processFunction,
-    ForStatement(forStatement: es.ForStatement, _ancestors: es.Node[]) {
-      const init = forStatement.init!
-      if (init.type === 'VariableDeclaration') {
-        accessedBeforeDeclarationMap.set(
-          forStatement,
-          new Map([[getVariableDecarationName(init), new Declaration(init.kind === 'const')]])
-        )
-        scopeHasCallExpressionMap.set(forStatement, false)
-      }
-    }
-  })
+  // ancestor(program as any, {
+  //   Program: processBlock,
+  //   BlockStatement: processBlock,
+  //   FunctionDeclaration: processFunction,
+  //   ArrowFunctionExpression: processFunction,
+  //   ForStatement(forStatement: any, _ancestors: any[]) {
+  //     const init = forStatement.init!
+  //     if (init.type === 'VariableDeclaration') {
+  //       accessedBeforeDeclarationMap.set(
+  //         forStatement,
+  //         new Map([[getVariableDecarationName(init), new Declaration(init.kind === 'const')]])
+  //       )
+  //       scopeHasCallExpressionMap.set(forStatement, false)
+  //     }
+  //   }
+  // })
 
-  function validateIdentifier(id: es.Identifier, ancestors: es.Node[]) {
+  function validateIdentifier(id: any, ancestors: any[]) {
     const name = id.name
-    const lastAncestor: es.Node = ancestors[ancestors.length - 2]
+    const lastAncestor: any = ancestors[ancestors.length - 2]
     for (let i = ancestors.length - 1; i >= 0; i--) {
       const a = ancestors[i]
       const map = accessedBeforeDeclarationMap.get(a)
@@ -75,67 +74,67 @@ export function validateAndAnnotate(
           if (map.get(name)!.isConstant) {
             context.errors.push(new ConstAssignment(lastAncestor, name))
           }
-          if (a.type === 'ForStatement' && a.init !== lastAncestor && a.update !== lastAncestor) {
-            context.errors.push(new NoAssignmentToForVariable(lastAncestor))
-          }
+          // if (a.type === 'ForStatement' && a.init !== lastAncestor && a.update !== lastAncestor) {
+          //   context.errors.push(new NoAssignmentToForVariable(lastAncestor))
+          // }
         }
         break
       }
     }
   }
-  const customWalker = {
-    ...base,
-    VariableDeclarator(node: es.VariableDeclarator, st: never, c: FullWalkerCallback<never>) {
-      // don't visit the id
-      if (node.init) {
-        c(node.init, st, 'Expression')
-      }
-    }
-  }
-  ancestor(
-    program,
-    {
-      VariableDeclaration(
-        node: NodeWithInferredType<es.VariableDeclaration>,
-        ancestors: es.Node[]
-      ) {
-        const lastAncestor = ancestors[ancestors.length - 2]
-        const name = getVariableDecarationName(node)
-        const accessedBeforeDeclaration = accessedBeforeDeclarationMap
-          .get(lastAncestor)!
-          .get(name)!.accessedBeforeDeclaration
-        node.typability = accessedBeforeDeclaration ? 'Untypable' : 'NotYetTyped'
-      },
-      Identifier: validateIdentifier,
-      FunctionDeclaration(
-        node: NodeWithInferredType<es.FunctionDeclaration>,
-        ancestors: es.Node[]
-      ) {
-        // a function declaration can be typed if there are no function calls in the same scope before it
-        const lastAncestor = ancestors[ancestors.length - 2]
-        node.typability = scopeHasCallExpressionMap.get(lastAncestor) ? 'Untypable' : 'NotYetTyped'
-      },
-      Pattern(node: es.Pattern, ancestors: es.Node[]) {
-        if (node.type === 'Identifier') {
-          validateIdentifier(node, ancestors)
-        } else if (node.type === 'MemberExpression') {
-          if (node.object.type === 'Identifier') {
-            validateIdentifier(node.object, ancestors)
-          }
-        }
-      },
-      CallExpression(call: es.CallExpression, ancestors: es.Node[]) {
-        for (let i = ancestors.length - 1; i >= 0; i--) {
-          const a = ancestors[i]
-          if (scopeHasCallExpressionMap.has(a)) {
-            scopeHasCallExpressionMap.set(a, true)
-            break
-          }
-        }
-      }
-    },
-    customWalker
-  )
+  // const customWalker = {
+  //   ...base,
+  //   VariableDeclarator(node: any, st: never, c: FullWalkerCallback<never>) {
+  //     // don't visit the id
+  //     if (node.init) {
+  //       c(node.init, st, 'Expression')
+  //     }
+  //   }
+  // }
+  // ancestor(
+  //   program,
+  //   {
+  //     VariableDeclaration(
+  //       node: NodeWithInferredType<any>,
+  //       ancestors: any[]
+  //     ) {
+  //       const lastAncestor = ancestors[ancestors.length - 2]
+  //       const name = getVariableDecarationName(node)
+  //       const accessedBeforeDeclaration = accessedBeforeDeclarationMap
+  //         .get(lastAncestor)!
+  //         .get(name)!.accessedBeforeDeclaration
+  //       node.typability = accessedBeforeDeclaration ? 'Untypable' : 'NotYetTyped'
+  //     },
+  //     Identifier: validateIdentifier,
+  //     FunctionDeclaration(
+  //       node: NodeWithInferredType<any>,
+  //       ancestors: any[]
+  //     ) {
+  //       // a function declaration can be typed if there are no function calls in the same scope before it
+  //       const lastAncestor = ancestors[ancestors.length - 2]
+  //       node.typability = scopeHasCallExpressionMap.get(lastAncestor) ? 'Untypable' : 'NotYetTyped'
+  //     },
+  //     Pattern(node: any, ancestors: any[]) {
+  //       if (node.type === 'Identifier') {
+  //         validateIdentifier(node, ancestors)
+  //       } else if (node.type === 'MemberExpression') {
+  //         if (node.object.type === 'Identifier') {
+  //           validateIdentifier(node.object, ancestors)
+  //         }
+  //       }
+  //     },
+  //     CallExpression(call: any, ancestors: any[]) {
+  //       for (let i = ancestors.length - 1; i >= 0; i--) {
+  //         const a = ancestors[i]
+  //         if (scopeHasCallExpressionMap.has(a)) {
+  //           scopeHasCallExpressionMap.set(a, true)
+  //           break
+  //         }
+  //       }
+  //     }
+  //   },
+  //   customWalker
+  // )
 
   /*
   simple(program, {
