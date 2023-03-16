@@ -247,7 +247,7 @@ export function* evaluate(node: any) {
   if (S.length > 1 || S.length < 1) {
     error(S, 'internal error: stash must be singleton but is: ')
   }
-  return S[0]
+  return yield* S[0]
   // const result = yield* evaluators[node.type](node, context)
   // yield* leave(context)
   // return result

@@ -1,14 +1,3 @@
-import {
-  ArrowFunctionExpression,
-  BlockStatement,
-  ForStatement,
-  FunctionDeclaration,
-  Identifier,
-  ImportSpecifier,
-  Node,
-  SourceLocation,
-  VariableDeclarator
-} from 'estree'
 
 import { Context } from './types'
 import {
@@ -22,11 +11,11 @@ import {
 
 // Finds the innermost node that matches the given location
 export function findIdentifierNode(
-  root: Node,
+  root: any,
   context: Context,
   loc: { line: number; column: number }
-): Identifier | undefined {
-  function findByLocationPredicate(type: string, node: Node) {
+): any | undefined {
+  function findByLocationPredicate(type: string, node: any) {
     const location = node.loc
     const nodeType = node.type
     if (nodeType && location) {
@@ -41,33 +30,33 @@ export function findIdentifierNode(
   }
 
   const found = findNodeAt(root, undefined, undefined, findByLocationPredicate, customWalker)
-  return found?.node as Identifier
+  return found?.node as any
 }
 
 // Recursively searches up the ancestors of the identifier from innermost to outermost scope
-export function findDeclarationNode(program: Node, identifier: Identifier): Node | undefined {
+export function findDeclarationNode(program: any, identifier: any): any | undefined {
   const ancestors = findAncestors(program, identifier)
   if (!ancestors) return undefined
 
-  const declarations: Node[] = []
+  const declarations: any[] = []
   for (const root of ancestors) {
     recursive(root, undefined, {
-      BlockStatement(node: BlockStatement, state: any, callback) {
+      BlockStatement(node: any, state: any, callback) {
         if (containsNode(node, identifier)) {
           node.body.map(n => callback(n, state))
         }
       },
-      ForStatement(node: ForStatement, state: any, callback: WalkerCallback<any>) {
+      ForStatement(node: any, state: any, callback: WalkerCallback<any>) {
         if (containsNode(node, identifier)) {
           callback(node.init as any, state)
           callback(node.body, state)
         }
       },
-      FunctionDeclaration(node: FunctionDeclaration, state: any, callback: WalkerCallback<any>) {
+      FunctionDeclaration(node: any, state: any, callback: WalkerCallback<any>) {
         if (node.id && node.id.name === identifier.name) {
           declarations.push(node.id)
         } else if (containsNode(node, identifier)) {
-          const param = node.params.find(n => (n as Identifier).name === identifier.name)
+          const param = node.params.find(n => (n as any).name === identifier.name)
           if (param) {
             declarations.push(param)
           } else {
@@ -75,9 +64,9 @@ export function findDeclarationNode(program: Node, identifier: Identifier): Node
           }
         }
       },
-      ArrowFunctionExpression(node: ArrowFunctionExpression, state: any, callback: any) {
+      ArrowFunctionExpression(node: any, state: any, callback: any) {
         if (containsNode(node, identifier)) {
-          const param = node.params.find(n => (n as Identifier).name === identifier.name)
+          const param = node.params.find(n => (n as any).name === identifier.name)
           if (param) {
             declarations.push(param)
           } else {
@@ -85,13 +74,13 @@ export function findDeclarationNode(program: Node, identifier: Identifier): Node
           }
         }
       },
-      VariableDeclarator(node: VariableDeclarator, _state: any, _callback: WalkerCallback<any>) {
-        if ((node.id as Identifier).name === identifier.name) {
+      VariableDeclarator(node: any, _state: any, _callback: WalkerCallback<any>) {
+        if ((node.id as any).name === identifier.name) {
           declarations.push(node.id)
         }
       },
-      ImportSpecifier(node: ImportSpecifier, _state: any, _callback: WalkerCallback<any>) {
-        if ((node.imported as Identifier).name === identifier.name) {
+      ImportSpecifier(node: any, _state: any, _callback: WalkerCallback<any>) {
+        if ((node.imported as any).name === identifier.name) {
           declarations.push(node.imported)
         }
       }
@@ -104,7 +93,7 @@ export function findDeclarationNode(program: Node, identifier: Identifier): Node
   return undefined
 }
 
-function containsNode(nodeOuter: Node, nodeInner: Node): boolean {
+function containsNode(nodeOuter: any, nodeInner: any): boolean {
   const outerLoc = nodeOuter.loc
   const innerLoc = nodeInner.loc
 
@@ -117,7 +106,7 @@ function containsNode(nodeOuter: Node, nodeInner: Node): boolean {
 }
 
 // This checks if a given (line, col) value is part of another node.
-export function isInLoc(line: number, col: number, location: SourceLocation): boolean {
+export function isInLoc(line: number, col: number, location: any): boolean {
   if (location == null) {
     return false
   }
@@ -139,12 +128,12 @@ export function isInLoc(line: number, col: number, location: SourceLocation): bo
   }
 }
 
-export function findAncestors(root: Node, identifier: Identifier): Node[] | undefined {
-  let foundAncestors: Node[] = []
+export function findAncestors(root: any, identifier: any): any[] | undefined {
+  let foundAncestors: any[] = []
   ancestor(
     root,
     {
-      Identifier: (node: Identifier, ancestors: [Node]) => {
+      Identifier: (node: any, ancestors: [any]) => {
         if (identifier.name === node.name && identifier.loc === node.loc) {
           foundAncestors = Object.assign([], ancestors).reverse()
           foundAncestors.shift() // Remove the identifier node
@@ -155,7 +144,7 @@ export function findAncestors(root: Node, identifier: Identifier): Node[] | unde
     Here is a github issue in acorn-walk related to this:
     https://github.com/acornjs/acorn/issues/686
     */
-      VariablePattern: (node: any, ancestors: [Node]) => {
+      VariablePattern: (node: any, ancestors: [any]) => {
         if (identifier.name === node.name && identifier.loc === node.loc) {
           foundAncestors = Object.assign([], ancestors).reverse()
         }
@@ -168,7 +157,7 @@ export function findAncestors(root: Node, identifier: Identifier): Node[] | unde
 
 const customWalker = {
   ...base,
-  ImportSpecifier(node: ImportSpecifier, st: never, c: FullWalkerCallback<never>) {
+  ImportSpecifier(node: any, st: never, c: FullWalkerCallback<never>) {
     c(node.imported, st, 'Expression')
   }
 }

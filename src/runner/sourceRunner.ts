@@ -38,7 +38,7 @@ export async function sourceRunner(
   context.errors = []
 
   // Parse and validate
-  const program: any = parse(code, context)
+  const program: any = parse(code)
   if (!program) {
     return resolvedErrorPromise
   }

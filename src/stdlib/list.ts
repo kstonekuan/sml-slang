@@ -83,7 +83,7 @@ export function is_list(xs: List) {
 // list_to_vector throws an exception if the argument is not a list
 // LOW-LEVEL FUNCTION, NOT SOURCE
 export function list_to_vector(lst: List) {
-  const vector = []
+  const vector: any[] = []
   while (!is_null(lst)) {
     vector.push(head(lst))
     lst = tail(lst)
