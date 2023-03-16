@@ -1,7 +1,8 @@
 /* tslint:disable:max-classes-per-file */
-import { error, stringify } from 'sicp'
+import { display, error, stringify } from 'sicp'
 
-import { command_to_string } from './debug'
+import { Context } from '../types'
+import { command_to_string, debug } from './debug'
 import { assign, extend, global_environment, handle_sequence, lookup, scan, unassigned } from './environment'
 import { apply_binop, apply_builtin, apply_unop, peek, push } from './utils'
 
@@ -51,8 +52,9 @@ let E: any[]
 const microcode = {
   /** Simple Values */
   lit:
-    cmd =>
-      push(S, cmd.value),
+    (cmd) => {
+      push(S, cmd.val)
+    },
   nam:
     cmd =>
       push(S, lookup(cmd.sym, E)),
@@ -223,20 +225,20 @@ const microcode = {
 const step_limit = 1000000
 
 // tslint:enable:object-literal-shorthand
-export function* evaluate(node: any) {
-  // TODO: Put S, A, E and loop here?? (homework 3)
-  A = [node]
+export function execute(program: any) {
+  A = [{ tag: 'blk', body: program }]
   S = []
-  E = [global_environment]
+  E = global_environment
   let i = 0
+  display(A, "A: ")
   while (i < step_limit) {
     if (A.length === 0) break
     const cmd = A.pop()
     if (microcode.hasOwnProperty(cmd.tag)) {
-      microcode[cmd.tag](cmd)
-      //debug(cmd)
+      microcode[cmd.tag](cmd, A, S, E)
+      debug(cmd, A, S, E)
     } else {
-      error("", "unknown command: " +
+      return display("", "unknown command: " +
         command_to_string(cmd))
     }
     i++
@@ -247,8 +249,17 @@ export function* evaluate(node: any) {
   if (S.length > 1 || S.length < 1) {
     error(S, 'internal error: stash must be singleton but is: ')
   }
-  return yield* S[0]
-  // const result = yield* evaluators[node.type](node, context)
-  // yield* leave(context)
-  // return result
+  return display(S[0])
+
+}
+
+function* leave(context: Context) {
+  context.runtime.break = false
+  context.runtime.nodes.shift()
+  yield context
+}
+export function* evaluate(node: any, context: Context) {
+  const result = execute(node.body[0])
+  yield* leave(context)
+  return result
 }

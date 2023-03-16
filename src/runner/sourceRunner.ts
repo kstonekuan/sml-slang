@@ -23,7 +23,7 @@ const DEFAULT_SOURCE_OPTIONS: IOptions = {
 }
 
 function runInterpreter(program: any, context: Context, options: IOptions): Promise<Result> {
-  const it = evaluate(program)
+  const it = evaluate(program, context)
   const scheduler: Scheduler = new PreemptiveScheduler(options.steps)
   return scheduler.run(it, context)
 }
@@ -38,7 +38,7 @@ export async function sourceRunner(
   context.errors = []
 
   // Parse and validate
-  const program: any = parse(code)
+  const program: any = parse(code, context)
   if (!program) {
     return resolvedErrorPromise
   }
@@ -46,11 +46,11 @@ export async function sourceRunner(
   // TODO: Remove this after runners have been refactored.
   //       These should be done as part of the local imports
   //       preprocessing step.
-  removeExports(program)
-  removeNonSourceModuleImports(program)
-  hoistAndMergeImports(program)
+  // removeExports(program)
+  // removeNonSourceModuleImports(program)
+  // hoistAndMergeImports(program)
 
-  validateAndAnnotate(program, context)
+  // validateAndAnnotate(program, context)
   context.unTypecheckedCode.push(code)
 
   if (context.errors.length > 0) {

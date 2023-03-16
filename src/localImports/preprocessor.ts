@@ -75,7 +75,7 @@ const parseProgramsAndConstructImportGraph = (
       return
     }
 
-    const program = parse(code)
+    const program = parse(code, context)
     if (program === undefined) {
       return
     }

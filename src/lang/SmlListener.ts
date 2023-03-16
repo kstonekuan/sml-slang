@@ -3,30 +3,29 @@
 
 import { ParseTreeListener } from "antlr4ts/tree/ParseTreeListener";
 
-import { LiteralExpressionContext } from "./SmlParser";
+import { IntExpressionContext } from "./SmlParser";
+import { RealExpressionContext } from "./SmlParser";
+import { BoolExpressionContext } from "./SmlParser";
+import { UnitExpressionContext } from "./SmlParser";
+import { CharExpressionContext } from "./SmlParser";
+import { StringExpressionContext } from "./SmlParser";
 import { IdentifierExpressionContext } from "./SmlParser";
+import { ParanthesesExpressionContext } from "./SmlParser";
 import { TupleExpressionContext } from "./SmlParser";
 import { ListExpressionContext } from "./SmlParser";
 import { ConditionalExpressionContext } from "./SmlParser";
 import { ApplyExpressionContext } from "./SmlParser";
 import { LambdaExpressionContext } from "./SmlParser";
-import { ParanthesesExpressionContext } from "./SmlParser";
 import { BinaryOperatorExpressionContext } from "./SmlParser";
 import { UnaryOperatorExpressionContext } from "./SmlParser";
 import { LetBlockExpressionContext } from "./SmlParser";
 import { PatternMatchExpressionContext } from "./SmlParser";
 import { StructAttributeExpressionContext } from "./SmlParser";
-import { LiteralListContext } from "./SmlParser";
+import { ExpressionListContext } from "./SmlParser";
 import { NilListContext } from "./SmlParser";
 import { VariableDeclarationContext } from "./SmlParser";
 import { FunctionDeclarationContext } from "./SmlParser";
 import { LocalBlockDeclarationContext } from "./SmlParser";
-import { IntLiteralContext } from "./SmlParser";
-import { RealLiteralContext } from "./SmlParser";
-import { BoolLiteralContext } from "./SmlParser";
-import { UnitLiteralContext } from "./SmlParser";
-import { CharLiteralContext } from "./SmlParser";
-import { StringLiteralContext } from "./SmlParser";
 import { DeclarationStatementContext } from "./SmlParser";
 import { ExpressionStatementContext } from "./SmlParser";
 import { StartContext } from "./SmlParser";
@@ -34,7 +33,8 @@ import { StatementContext } from "./SmlParser";
 import { VariableContext } from "./SmlParser";
 import { FunctionContext } from "./SmlParser";
 import { DeclarationContext } from "./SmlParser";
-import { LiteralContext } from "./SmlParser";
+import { BinopContext } from "./SmlParser";
+import { UnopContext } from "./SmlParser";
 import { ListContext } from "./SmlParser";
 import { LambdaContext } from "./SmlParser";
 import { ExpressionContext } from "./SmlParser";
@@ -54,17 +54,82 @@ import { FunctorDefContext } from "./SmlParser";
  */
 export interface SmlListener extends ParseTreeListener {
 	/**
-	 * Enter a parse tree produced by the `literalExpression`
+	 * Enter a parse tree produced by the `intExpression`
 	 * labeled alternative in `SmlParser.expression`.
 	 * @param ctx the parse tree
 	 */
-	enterLiteralExpression?: (ctx: LiteralExpressionContext) => void;
+	enterIntExpression?: (ctx: IntExpressionContext) => void;
 	/**
-	 * Exit a parse tree produced by the `literalExpression`
+	 * Exit a parse tree produced by the `intExpression`
 	 * labeled alternative in `SmlParser.expression`.
 	 * @param ctx the parse tree
 	 */
-	exitLiteralExpression?: (ctx: LiteralExpressionContext) => void;
+	exitIntExpression?: (ctx: IntExpressionContext) => void;
+
+	/**
+	 * Enter a parse tree produced by the `realExpression`
+	 * labeled alternative in `SmlParser.expression`.
+	 * @param ctx the parse tree
+	 */
+	enterRealExpression?: (ctx: RealExpressionContext) => void;
+	/**
+	 * Exit a parse tree produced by the `realExpression`
+	 * labeled alternative in `SmlParser.expression`.
+	 * @param ctx the parse tree
+	 */
+	exitRealExpression?: (ctx: RealExpressionContext) => void;
+
+	/**
+	 * Enter a parse tree produced by the `boolExpression`
+	 * labeled alternative in `SmlParser.expression`.
+	 * @param ctx the parse tree
+	 */
+	enterBoolExpression?: (ctx: BoolExpressionContext) => void;
+	/**
+	 * Exit a parse tree produced by the `boolExpression`
+	 * labeled alternative in `SmlParser.expression`.
+	 * @param ctx the parse tree
+	 */
+	exitBoolExpression?: (ctx: BoolExpressionContext) => void;
+
+	/**
+	 * Enter a parse tree produced by the `unitExpression`
+	 * labeled alternative in `SmlParser.expression`.
+	 * @param ctx the parse tree
+	 */
+	enterUnitExpression?: (ctx: UnitExpressionContext) => void;
+	/**
+	 * Exit a parse tree produced by the `unitExpression`
+	 * labeled alternative in `SmlParser.expression`.
+	 * @param ctx the parse tree
+	 */
+	exitUnitExpression?: (ctx: UnitExpressionContext) => void;
+
+	/**
+	 * Enter a parse tree produced by the `charExpression`
+	 * labeled alternative in `SmlParser.expression`.
+	 * @param ctx the parse tree
+	 */
+	enterCharExpression?: (ctx: CharExpressionContext) => void;
+	/**
+	 * Exit a parse tree produced by the `charExpression`
+	 * labeled alternative in `SmlParser.expression`.
+	 * @param ctx the parse tree
+	 */
+	exitCharExpression?: (ctx: CharExpressionContext) => void;
+
+	/**
+	 * Enter a parse tree produced by the `stringExpression`
+	 * labeled alternative in `SmlParser.expression`.
+	 * @param ctx the parse tree
+	 */
+	enterStringExpression?: (ctx: StringExpressionContext) => void;
+	/**
+	 * Exit a parse tree produced by the `stringExpression`
+	 * labeled alternative in `SmlParser.expression`.
+	 * @param ctx the parse tree
+	 */
+	exitStringExpression?: (ctx: StringExpressionContext) => void;
 
 	/**
 	 * Enter a parse tree produced by the `identifierExpression`
@@ -78,6 +143,19 @@ export interface SmlListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitIdentifierExpression?: (ctx: IdentifierExpressionContext) => void;
+
+	/**
+	 * Enter a parse tree produced by the `paranthesesExpression`
+	 * labeled alternative in `SmlParser.expression`.
+	 * @param ctx the parse tree
+	 */
+	enterParanthesesExpression?: (ctx: ParanthesesExpressionContext) => void;
+	/**
+	 * Exit a parse tree produced by the `paranthesesExpression`
+	 * labeled alternative in `SmlParser.expression`.
+	 * @param ctx the parse tree
+	 */
+	exitParanthesesExpression?: (ctx: ParanthesesExpressionContext) => void;
 
 	/**
 	 * Enter a parse tree produced by the `tupleExpression`
@@ -145,19 +223,6 @@ export interface SmlListener extends ParseTreeListener {
 	exitLambdaExpression?: (ctx: LambdaExpressionContext) => void;
 
 	/**
-	 * Enter a parse tree produced by the `paranthesesExpression`
-	 * labeled alternative in `SmlParser.expression`.
-	 * @param ctx the parse tree
-	 */
-	enterParanthesesExpression?: (ctx: ParanthesesExpressionContext) => void;
-	/**
-	 * Exit a parse tree produced by the `paranthesesExpression`
-	 * labeled alternative in `SmlParser.expression`.
-	 * @param ctx the parse tree
-	 */
-	exitParanthesesExpression?: (ctx: ParanthesesExpressionContext) => void;
-
-	/**
 	 * Enter a parse tree produced by the `binaryOperatorExpression`
 	 * labeled alternative in `SmlParser.expression`.
 	 * @param ctx the parse tree
@@ -223,17 +288,17 @@ export interface SmlListener extends ParseTreeListener {
 	exitStructAttributeExpression?: (ctx: StructAttributeExpressionContext) => void;
 
 	/**
-	 * Enter a parse tree produced by the `literalList`
+	 * Enter a parse tree produced by the `expressionList`
 	 * labeled alternative in `SmlParser.list`.
 	 * @param ctx the parse tree
 	 */
-	enterLiteralList?: (ctx: LiteralListContext) => void;
+	enterExpressionList?: (ctx: ExpressionListContext) => void;
 	/**
-	 * Exit a parse tree produced by the `literalList`
+	 * Exit a parse tree produced by the `expressionList`
 	 * labeled alternative in `SmlParser.list`.
 	 * @param ctx the parse tree
 	 */
-	exitLiteralList?: (ctx: LiteralListContext) => void;
+	exitExpressionList?: (ctx: ExpressionListContext) => void;
 
 	/**
 	 * Enter a parse tree produced by the `nilList`
@@ -286,84 +351,6 @@ export interface SmlListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitLocalBlockDeclaration?: (ctx: LocalBlockDeclarationContext) => void;
-
-	/**
-	 * Enter a parse tree produced by the `intLiteral`
-	 * labeled alternative in `SmlParser.literal`.
-	 * @param ctx the parse tree
-	 */
-	enterIntLiteral?: (ctx: IntLiteralContext) => void;
-	/**
-	 * Exit a parse tree produced by the `intLiteral`
-	 * labeled alternative in `SmlParser.literal`.
-	 * @param ctx the parse tree
-	 */
-	exitIntLiteral?: (ctx: IntLiteralContext) => void;
-
-	/**
-	 * Enter a parse tree produced by the `realLiteral`
-	 * labeled alternative in `SmlParser.literal`.
-	 * @param ctx the parse tree
-	 */
-	enterRealLiteral?: (ctx: RealLiteralContext) => void;
-	/**
-	 * Exit a parse tree produced by the `realLiteral`
-	 * labeled alternative in `SmlParser.literal`.
-	 * @param ctx the parse tree
-	 */
-	exitRealLiteral?: (ctx: RealLiteralContext) => void;
-
-	/**
-	 * Enter a parse tree produced by the `boolLiteral`
-	 * labeled alternative in `SmlParser.literal`.
-	 * @param ctx the parse tree
-	 */
-	enterBoolLiteral?: (ctx: BoolLiteralContext) => void;
-	/**
-	 * Exit a parse tree produced by the `boolLiteral`
-	 * labeled alternative in `SmlParser.literal`.
-	 * @param ctx the parse tree
-	 */
-	exitBoolLiteral?: (ctx: BoolLiteralContext) => void;
-
-	/**
-	 * Enter a parse tree produced by the `unitLiteral`
-	 * labeled alternative in `SmlParser.literal`.
-	 * @param ctx the parse tree
-	 */
-	enterUnitLiteral?: (ctx: UnitLiteralContext) => void;
-	/**
-	 * Exit a parse tree produced by the `unitLiteral`
-	 * labeled alternative in `SmlParser.literal`.
-	 * @param ctx the parse tree
-	 */
-	exitUnitLiteral?: (ctx: UnitLiteralContext) => void;
-
-	/**
-	 * Enter a parse tree produced by the `charLiteral`
-	 * labeled alternative in `SmlParser.literal`.
-	 * @param ctx the parse tree
-	 */
-	enterCharLiteral?: (ctx: CharLiteralContext) => void;
-	/**
-	 * Exit a parse tree produced by the `charLiteral`
-	 * labeled alternative in `SmlParser.literal`.
-	 * @param ctx the parse tree
-	 */
-	exitCharLiteral?: (ctx: CharLiteralContext) => void;
-
-	/**
-	 * Enter a parse tree produced by the `stringLiteral`
-	 * labeled alternative in `SmlParser.literal`.
-	 * @param ctx the parse tree
-	 */
-	enterStringLiteral?: (ctx: StringLiteralContext) => void;
-	/**
-	 * Exit a parse tree produced by the `stringLiteral`
-	 * labeled alternative in `SmlParser.literal`.
-	 * @param ctx the parse tree
-	 */
-	exitStringLiteral?: (ctx: StringLiteralContext) => void;
 
 	/**
 	 * Enter a parse tree produced by the `declarationStatement`
@@ -447,15 +434,26 @@ export interface SmlListener extends ParseTreeListener {
 	exitDeclaration?: (ctx: DeclarationContext) => void;
 
 	/**
-	 * Enter a parse tree produced by `SmlParser.literal`.
+	 * Enter a parse tree produced by `SmlParser.binop`.
 	 * @param ctx the parse tree
 	 */
-	enterLiteral?: (ctx: LiteralContext) => void;
+	enterBinop?: (ctx: BinopContext) => void;
 	/**
-	 * Exit a parse tree produced by `SmlParser.literal`.
+	 * Exit a parse tree produced by `SmlParser.binop`.
 	 * @param ctx the parse tree
 	 */
-	exitLiteral?: (ctx: LiteralContext) => void;
+	exitBinop?: (ctx: BinopContext) => void;
+
+	/**
+	 * Enter a parse tree produced by `SmlParser.unop`.
+	 * @param ctx the parse tree
+	 */
+	enterUnop?: (ctx: UnopContext) => void;
+	/**
+	 * Exit a parse tree produced by `SmlParser.unop`.
+	 * @param ctx the parse tree
+	 */
+	exitUnop?: (ctx: UnopContext) => void;
 
 	/**
 	 * Enter a parse tree produced by `SmlParser.list`.

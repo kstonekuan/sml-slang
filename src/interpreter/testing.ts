@@ -1,6 +1,6 @@
 import { display, error, stringify } from 'sicp'
 
-import { evaluate } from './interpreter'
+import { execute } from './interpreter'
 
 
 /* *******
@@ -12,7 +12,7 @@ const test = (program, expected) => {
     
 ****************
 Test case: ` + program + "\n")
-    const result = evaluate(program)
+    const result = execute(program)
     if (stringify(result) === stringify(expected)) {
         display(result, "success:")
     } else {

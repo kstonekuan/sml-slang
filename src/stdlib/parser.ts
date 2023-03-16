@@ -292,7 +292,7 @@ function transform(node: any) {
 }
 
 export function parse(x: string, context: Context): Value {
-  const program = sourceParse(x)
+  const program = sourceParse(x, context)
   if (context.errors.length > 0) {
     throw new ParseError(context.errors[0].explain())
   }

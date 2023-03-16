@@ -3,8 +3,6 @@ grammar Sml;
 /*
  * Tokens (terminal)
  */
-CHAR: '"' ~["] '"';
-STRING: '"' ~["]* '"';
 
 VAL: 'val';
 LET: 'let';
@@ -67,31 +65,14 @@ DIV: '/';
 ADD: '+';
 SUB: '-';
 
-BINOP:
-	EQUALS
-	| NOT_EQUALS
-	| LESS
-	| LESS_OR_EQUALS
-	| GREATER
-	| GREATER_OR_EQUALS
-	| POW
-	| MUL
-	| DIV
-	| ADD
-	| SUB
-	| LIST_CONSTRUCT
-	| LIST_CONCAT;
-// LIST_CONCAT, left and right expressions have to be a list LIST_CONSTRUCT go from right to left,
-// and rightmost has to be a list
-
-UNOP: NEGATE;
-
 INT: [0-9]+;
 REAL: INT+ DOT INT+;
 BOOL: 'true' | 'false';
 UNIT: '()';
-IDENTIFIER: '[_a-z][_a-zA-Z0-9\']*';
+CHAR: '"' ~["] '"';
+STRING: '"' ~["]* '"';
 
+IDENTIFIER: '[_a-z][_a-zA-Z0-9\']*';
 IDENTIFIER_TUPLE:
 	L_PAREN IDENTIFIER (COMMA IDENTIFIER)* R_PAREN;
 
@@ -127,17 +108,28 @@ declaration:
 		body += declaration
 	)+ END # localBlockDeclaration;
 
-literal:
-	value = INT			# intLiteral
-	| value = REAL		# realLiteral
-	| value = BOOL		# boolLiteral
-	| value = UNIT		# unitLiteral
-	| value = CHAR		# charLiteral
-	| value = STRING	# stringLiteral;
+binop:
+	EQUALS
+	| NOT_EQUALS
+	| LESS
+	| LESS_OR_EQUALS
+	| GREATER
+	| GREATER_OR_EQUALS
+	| POW
+	| MUL
+	| DIV
+	| ADD
+	| SUB
+	| LIST_CONSTRUCT
+	| LIST_CONCAT;
+// LIST_CONCAT, left and right expressions have to be a list LIST_CONSTRUCT go from right to left,
+// and rightmost has to be a list
+
+unop: NEGATE;
 
 list:
-	L_BRACKET first = literal (COMMA rest += literal)* R_BRACKET	# literalList
-	| LIST_NIL														# nilList;
+	L_BRACKET first = expression (COMMA rest += expression)* R_BRACKET	# expressionList
+	| LIST_NIL															# nilList;
 
 lambda:
 	FN (
@@ -147,9 +139,15 @@ lambda:
 	) DOUBLE_ARROW body = expression;
 
 expression:
-	body = literal																			# literalExpression
-	| name = IDENTIFIER																		# identifierExpression
-	| L_PAREN first = literal (COMMA rest += literal)+ R_PAREN								# tupleExpression
+	INT																						# intExpression
+	| REAL																					# realExpression
+	| BOOL																					# boolExpression
+	| UNIT																					# unitExpression
+	| CHAR																					# charExpression
+	| STRING																				# stringExpression
+	| IDENTIFIER																			# identifierExpression
+	| L_PAREN inner = expression R_PAREN													# paranthesesExpression
+	| L_PAREN first = expression (COMMA rest += expression)+ R_PAREN						# tupleExpression
 	| body = list																			# listExpression
 	| IF predicate = expression THEN consequent = expression ELSE alternative = expression	#
 		conditionalExpression
@@ -159,9 +157,8 @@ expression:
 		| structNameApply = IDENTIFIER DOT structMethodApply = IDENTIFIER
 	) arg = expression												# applyExpression
 	| body = lambda													# lambdaExpression
-	| L_PAREN inner = expression R_PAREN							# paranthesesExpression
-	| left = expression operator = BINOP right = expression			# binaryOperatorExpression
-	| operator = UNOP expr = expression								# unaryOperatorExpression
+	| left = expression operator = binop right = expression			# binaryOperatorExpression
+	| operator = unop expr = expression								# unaryOperatorExpression
 	| LET (declarations += declaration)+ IN body = expression END	# letBlockExpression
 	| CASE name = IDENTIFIER OF firstCase = expression DOUBLE_ARROW firstResult = expression (
 		otherPatterns += nextPattern
