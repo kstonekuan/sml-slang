@@ -37,8 +37,6 @@ STRUCT: 'struct';
 FUNCTOR: 'functor';
 
 // Punctuation
-L_PAREN: '(';
-R_PAREN: ')';
 L_CURLY: '{';
 R_CURLY: '}';
 L_BRACKET: '[';
@@ -90,10 +88,9 @@ INT: [0-9]+;
 REAL: INT+ DOT INT+;
 BOOL: 'true' | 'false';
 UNIT: '()';
-IDENTIFIER: '[_a-z][_a-zA-Z0-9\']*';
+IDENTIFIER: [_a-z][_a-zA-Z0-9']*;
 
-IDENTIFIER_TUPLE:
-	L_PAREN IDENTIFIER (COMMA IDENTIFIER)* R_PAREN;
+IDENTIFIER_TUPLE: '(' IDENTIFIER (COMMA IDENTIFIER)* ')';
 
 WHITESPACE: [ \r\n\t]+ -> skip;
 
@@ -116,7 +113,7 @@ variable: VAL name = IDENTIFIER EQUALS value = expression;
 function:
 	FUN name = IDENTIFIER (
 		identifierArg = IDENTIFIER
-		| L_PAREN identifierParenthesisArg = IDENTIFIER R_PAREN
+		| '(' identifierParenthesisArg = IDENTIFIER ')'
 		| identifierTupleArg = IDENTIFIER_TUPLE
 	) EQUALS body = expression;
 
@@ -142,14 +139,14 @@ list:
 lambda:
 	FN (
 		identifierArg = IDENTIFIER
-		| L_PAREN identifierParenthesisArg = IDENTIFIER R_PAREN
+		| '(' identifierParenthesisArg = IDENTIFIER ')'
 		| identifierTupleArg = IDENTIFIER_TUPLE
 	) DOUBLE_ARROW body = expression;
 
 expression:
 	body = literal																			# literalExpression
 	| name = IDENTIFIER																		# identifierExpression
-	| L_PAREN first = literal (COMMA rest += literal)+ R_PAREN								# tupleExpression
+	| '(' first = literal (COMMA rest += literal)+ ')'										# tupleExpression
 	| body = list																			# listExpression
 	| IF predicate = expression THEN consequent = expression ELSE alternative = expression	#
 		conditionalExpression
@@ -159,7 +156,7 @@ expression:
 		| structNameApply = IDENTIFIER DOT structMethodApply = IDENTIFIER
 	) arg = expression												# applyExpression
 	| body = lambda													# lambdaExpression
-	| L_PAREN inner = expression R_PAREN							# paranthesesExpression
+	| '(' inner = expression ')'									# paranthesesExpression
 	| left = expression operator = BINOP right = expression			# binaryOperatorExpression
 	| operator = UNOP expr = expression								# unaryOperatorExpression
 	| LET (declarations += declaration)+ IN body = expression END	# letBlockExpression
@@ -183,7 +180,7 @@ type: // TODO
 	| type TYPE_LIST // list
 	| type MUL type // tuple
 	| type SINGLE_ARROW type // function
-	| L_PAREN type R_PAREN;
+	| '(' type ')';
 
 typeDefinition: VAL IDENTIFIER COLON type; // TODO
 
@@ -199,9 +196,9 @@ moduleStructure: // TODO
 	);
 
 functorApply: // TODO
-	functorName = IDENTIFIER L_PAREN structName = IDENTIFIER R_PAREN;
+	functorName = IDENTIFIER '(' structName = IDENTIFIER ')';
 
 functorDef: // TODO
-	FUNCTOR name = IDENTIFIER L_PAREN structName = IDENTIFIER COLON sigName = IDENTIFIER R_PAREN
-		EQUALS structBlock;
+	FUNCTOR name = IDENTIFIER '(' structName = IDENTIFIER COLON sigName = IDENTIFIER ')' EQUALS
+		structBlock;
 
