@@ -14,7 +14,7 @@ import { ListExpressionContext } from "../lang/SmlParser";
 import { ConditionalExpressionContext } from "../lang/SmlParser";
 import { ApplyExpressionContext } from "../lang/SmlParser";
 import { LambdaExpressionContext } from "../lang/SmlParser";
-import { ParanthesesExpressionContext } from "../lang/SmlParser";
+import { ParenthesesExpressionContext } from "../lang/SmlParser";
 import { BinaryOperatorExpressionContext } from "../lang/SmlParser";
 import { UnaryOperatorExpressionContext } from "../lang/SmlParser";
 import { LetBlockExpressionContext } from "../lang/SmlParser";
@@ -34,8 +34,8 @@ import { LambdaContext } from "../lang/SmlParser";
 import { ExpressionContext } from "../lang/SmlParser";
 import { TypeContext } from "../lang/SmlParser";
 import { TypeDefinitionContext } from "../lang/SmlParser";
+import { ParenthesesContext } from '../lang/SmlParser'
 import { SmlVisitor } from '../lang/SmlVisitor'
-import { ParenthesesContext } from '../lang_calc/CalcParser'
 import { Context, ErrorSeverity, ErrorType, SourceError } from '../types'
 import { declaration } from '../utils/astCreator'
 import { stripIndent } from '../utils/formatters'
@@ -247,7 +247,11 @@ class ExpressionGenerator implements SmlVisitor<any> {
   visitExpressionStatement(ctx: ExpressionStatementContext): any {
     return this.visit(ctx._body)
   }
-  visitParenthesesExpression(ctx: ParanthesesExpressionContext): any {
+  visitParenthesesExpression(ctx: ParenthesesExpressionContext): any {
+    display(ctx._body, "ParenthesesExpression -> _body: ")
+    return this.visit(ctx._body)
+  }
+  visitParentheses(ctx: ParenthesesContext): any {
     return this.visit(ctx._inner)
   }
   visitExpressionList(ctx: ExpressionListContext): any {
@@ -302,7 +306,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
   visitUnop(ctx: UnopContext): any {
     return ctx.text
   }
-  
+
   visitTupleExpression(ctx: TupleExpressionContext): any {
     return {
       tag: 'tuple',
@@ -431,6 +435,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
     }
   }
   visitTerminal(node: TerminalNode): any {
+    display(node.text, "visitTerminal -> node.text: ")
     return undefined
   }
 

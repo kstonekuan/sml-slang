@@ -235,7 +235,11 @@ export function execute(program: any) {
     if (A.length === 0) break
     const cmd = A.pop()
     if (microcode.hasOwnProperty(cmd.tag)) {
-      microcode[cmd.tag](cmd, A, S, E)
+      try {
+        microcode[cmd.tag](cmd)
+      } catch (e) {
+        return display(e, "error in microcode: ")
+      }
       debug(cmd, A, S, E)
     } else {
       return display("", "unknown command: " +

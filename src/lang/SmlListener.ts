@@ -10,7 +10,7 @@ import { UnitExpressionContext } from "./SmlParser";
 import { CharExpressionContext } from "./SmlParser";
 import { StringExpressionContext } from "./SmlParser";
 import { IdentifierExpressionContext } from "./SmlParser";
-import { ParanthesesExpressionContext } from "./SmlParser";
+import { ParenthesesExpressionContext } from "./SmlParser";
 import { TupleExpressionContext } from "./SmlParser";
 import { ListExpressionContext } from "./SmlParser";
 import { ConditionalExpressionContext } from "./SmlParser";
@@ -30,6 +30,7 @@ import { DeclarationStatementContext } from "./SmlParser";
 import { ExpressionStatementContext } from "./SmlParser";
 import { StartContext } from "./SmlParser";
 import { StatementContext } from "./SmlParser";
+import { IdentifierTupleContext } from "./SmlParser";
 import { VariableContext } from "./SmlParser";
 import { FunctionContext } from "./SmlParser";
 import { DeclarationContext } from "./SmlParser";
@@ -37,6 +38,7 @@ import { BinopContext } from "./SmlParser";
 import { UnopContext } from "./SmlParser";
 import { ListContext } from "./SmlParser";
 import { LambdaContext } from "./SmlParser";
+import { ParenthesesContext } from "./SmlParser";
 import { ExpressionContext } from "./SmlParser";
 import { NextPatternContext } from "./SmlParser";
 import { TypeContext } from "./SmlParser";
@@ -145,17 +147,17 @@ export interface SmlListener extends ParseTreeListener {
 	exitIdentifierExpression?: (ctx: IdentifierExpressionContext) => void;
 
 	/**
-	 * Enter a parse tree produced by the `paranthesesExpression`
+	 * Enter a parse tree produced by the `parenthesesExpression`
 	 * labeled alternative in `SmlParser.expression`.
 	 * @param ctx the parse tree
 	 */
-	enterParanthesesExpression?: (ctx: ParanthesesExpressionContext) => void;
+	enterParenthesesExpression?: (ctx: ParenthesesExpressionContext) => void;
 	/**
-	 * Exit a parse tree produced by the `paranthesesExpression`
+	 * Exit a parse tree produced by the `parenthesesExpression`
 	 * labeled alternative in `SmlParser.expression`.
 	 * @param ctx the parse tree
 	 */
-	exitParanthesesExpression?: (ctx: ParanthesesExpressionContext) => void;
+	exitParenthesesExpression?: (ctx: ParenthesesExpressionContext) => void;
 
 	/**
 	 * Enter a parse tree produced by the `tupleExpression`
@@ -401,6 +403,17 @@ export interface SmlListener extends ParseTreeListener {
 	exitStatement?: (ctx: StatementContext) => void;
 
 	/**
+	 * Enter a parse tree produced by `SmlParser.identifierTuple`.
+	 * @param ctx the parse tree
+	 */
+	enterIdentifierTuple?: (ctx: IdentifierTupleContext) => void;
+	/**
+	 * Exit a parse tree produced by `SmlParser.identifierTuple`.
+	 * @param ctx the parse tree
+	 */
+	exitIdentifierTuple?: (ctx: IdentifierTupleContext) => void;
+
+	/**
 	 * Enter a parse tree produced by `SmlParser.variable`.
 	 * @param ctx the parse tree
 	 */
@@ -476,6 +489,17 @@ export interface SmlListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitLambda?: (ctx: LambdaContext) => void;
+
+	/**
+	 * Enter a parse tree produced by `SmlParser.parentheses`.
+	 * @param ctx the parse tree
+	 */
+	enterParentheses?: (ctx: ParenthesesContext) => void;
+	/**
+	 * Exit a parse tree produced by `SmlParser.parentheses`.
+	 * @param ctx the parse tree
+	 */
+	exitParentheses?: (ctx: ParenthesesContext) => void;
 
 	/**
 	 * Enter a parse tree produced by `SmlParser.expression`.

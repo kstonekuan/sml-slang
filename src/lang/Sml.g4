@@ -70,7 +70,6 @@ UNIT: '()';
 CHAR: '"' ~["] '"';
 STRING: '"' ~["]* '"';
 IDENTIFIER: [_a-z][_a-zA-Z0-9']*;
-IDENTIFIER_TUPLE: '(' IDENTIFIER (COMMA IDENTIFIER)* ')';
 
 WHITESPACE: [ \r\n\t]+ -> skip;
 
@@ -88,13 +87,16 @@ statement:
 	body = declaration	# declarationStatement
 	| body = expression	# expressionStatement;
 
+identifierTuple:
+	'(' first = IDENTIFIER (COMMA rest += IDENTIFIER)+ ')';
+
 variable: VAL name = IDENTIFIER EQUALS value = expression;
 
 function:
 	FUN name = IDENTIFIER (
 		identifierArg = IDENTIFIER
 		| '(' identifierParenthesisArg = IDENTIFIER ')'
-		| identifierTupleArg = IDENTIFIER_TUPLE
+		| identifierTupleArg = identifierTuple
 	) EQUALS body = expression;
 
 declaration:
@@ -131,8 +133,10 @@ lambda:
 	FN (
 		identifierArg = IDENTIFIER
 		| '(' identifierParenthesisArg = IDENTIFIER ')'
-		| identifierTupleArg = IDENTIFIER_TUPLE
+		| identifierTupleArg = identifierTuple
 	) DOUBLE_ARROW body = expression;
+
+parentheses: '(' inner = expression ')';
 
 expression:
 	INT																						# intExpression
@@ -142,7 +146,7 @@ expression:
 	| CHAR																					# charExpression
 	| STRING																				# stringExpression
 	| IDENTIFIER																			# identifierExpression
-	| '(' inner = expression ')'															# paranthesesExpression
+	| body = parentheses																	# parenthesesExpression
 	| '(' first = expression (COMMA rest += expression)+ ')'								# tupleExpression
 	| body = list																			# listExpression
 	| IF predicate = expression THEN consequent = expression ELSE alternative = expression	#
@@ -153,7 +157,6 @@ expression:
 		| structNameApply = IDENTIFIER DOT structMethodApply = IDENTIFIER
 	) arg = expression												# applyExpression
 	| body = lambda													# lambdaExpression
-	| '(' inner = expression ')'									# paranthesesExpression
 	| left = expression operator = binop right = expression			# binaryOperatorExpression
 	| operator = unop expr = expression								# unaryOperatorExpression
 	| LET (declarations += declaration)+ IN body = expression END	# letBlockExpression

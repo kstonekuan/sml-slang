@@ -10,7 +10,7 @@ import { UnitExpressionContext } from "./SmlParser";
 import { CharExpressionContext } from "./SmlParser";
 import { StringExpressionContext } from "./SmlParser";
 import { IdentifierExpressionContext } from "./SmlParser";
-import { ParanthesesExpressionContext } from "./SmlParser";
+import { ParenthesesExpressionContext } from "./SmlParser";
 import { TupleExpressionContext } from "./SmlParser";
 import { ListExpressionContext } from "./SmlParser";
 import { ConditionalExpressionContext } from "./SmlParser";
@@ -30,6 +30,7 @@ import { DeclarationStatementContext } from "./SmlParser";
 import { ExpressionStatementContext } from "./SmlParser";
 import { StartContext } from "./SmlParser";
 import { StatementContext } from "./SmlParser";
+import { IdentifierTupleContext } from "./SmlParser";
 import { VariableContext } from "./SmlParser";
 import { FunctionContext } from "./SmlParser";
 import { DeclarationContext } from "./SmlParser";
@@ -37,6 +38,7 @@ import { BinopContext } from "./SmlParser";
 import { UnopContext } from "./SmlParser";
 import { ListContext } from "./SmlParser";
 import { LambdaContext } from "./SmlParser";
+import { ParenthesesContext } from "./SmlParser";
 import { ExpressionContext } from "./SmlParser";
 import { NextPatternContext } from "./SmlParser";
 import { TypeContext } from "./SmlParser";
@@ -113,12 +115,12 @@ export interface SmlVisitor<Result> extends ParseTreeVisitor<Result> {
 	visitIdentifierExpression?: (ctx: IdentifierExpressionContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by the `paranthesesExpression`
+	 * Visit a parse tree produced by the `parenthesesExpression`
 	 * labeled alternative in `SmlParser.expression`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitParanthesesExpression?: (ctx: ParanthesesExpressionContext) => Result;
+	visitParenthesesExpression?: (ctx: ParenthesesExpressionContext) => Result;
 
 	/**
 	 * Visit a parse tree produced by the `tupleExpression`
@@ -271,6 +273,13 @@ export interface SmlVisitor<Result> extends ParseTreeVisitor<Result> {
 	visitStatement?: (ctx: StatementContext) => Result;
 
 	/**
+	 * Visit a parse tree produced by `SmlParser.identifierTuple`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitIdentifierTuple?: (ctx: IdentifierTupleContext) => Result;
+
+	/**
 	 * Visit a parse tree produced by `SmlParser.variable`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -318,6 +327,13 @@ export interface SmlVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitLambda?: (ctx: LambdaContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by `SmlParser.parentheses`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitParentheses?: (ctx: ParenthesesContext) => Result;
 
 	/**
 	 * Visit a parse tree produced by `SmlParser.expression`.
