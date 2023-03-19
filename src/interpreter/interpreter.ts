@@ -135,7 +135,7 @@ const microcode = {
   fun:
     cmd =>
       push(A, {
-        tag: 'const',
+        tag: 'val',
         sym: cmd.sym,
         expr: { tag: 'lam', prms: cmd.prms, body: cmd.body }
       }),

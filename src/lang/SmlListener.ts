@@ -20,7 +20,6 @@ import { BinaryOperatorExpressionContext } from "./SmlParser";
 import { UnaryOperatorExpressionContext } from "./SmlParser";
 import { LetBlockExpressionContext } from "./SmlParser";
 import { PatternMatchExpressionContext } from "./SmlParser";
-import { StructAttributeExpressionContext } from "./SmlParser";
 import { ExpressionListContext } from "./SmlParser";
 import { NilListContext } from "./SmlParser";
 import { VariableDeclarationContext } from "./SmlParser";
@@ -39,15 +38,9 @@ import { UnopContext } from "./SmlParser";
 import { ListContext } from "./SmlParser";
 import { LambdaContext } from "./SmlParser";
 import { ParenthesesContext } from "./SmlParser";
+import { ApplyContext } from "./SmlParser";
 import { ExpressionContext } from "./SmlParser";
 import { NextPatternContext } from "./SmlParser";
-import { TypeContext } from "./SmlParser";
-import { TypeDefinitionContext } from "./SmlParser";
-import { ModuleSignatureContext } from "./SmlParser";
-import { StructBlockContext } from "./SmlParser";
-import { ModuleStructureContext } from "./SmlParser";
-import { FunctorApplyContext } from "./SmlParser";
-import { FunctorDefContext } from "./SmlParser";
 
 
 /**
@@ -277,19 +270,6 @@ export interface SmlListener extends ParseTreeListener {
 	exitPatternMatchExpression?: (ctx: PatternMatchExpressionContext) => void;
 
 	/**
-	 * Enter a parse tree produced by the `structAttributeExpression`
-	 * labeled alternative in `SmlParser.expression`.
-	 * @param ctx the parse tree
-	 */
-	enterStructAttributeExpression?: (ctx: StructAttributeExpressionContext) => void;
-	/**
-	 * Exit a parse tree produced by the `structAttributeExpression`
-	 * labeled alternative in `SmlParser.expression`.
-	 * @param ctx the parse tree
-	 */
-	exitStructAttributeExpression?: (ctx: StructAttributeExpressionContext) => void;
-
-	/**
 	 * Enter a parse tree produced by the `expressionList`
 	 * labeled alternative in `SmlParser.list`.
 	 * @param ctx the parse tree
@@ -502,6 +482,17 @@ export interface SmlListener extends ParseTreeListener {
 	exitParentheses?: (ctx: ParenthesesContext) => void;
 
 	/**
+	 * Enter a parse tree produced by `SmlParser.apply`.
+	 * @param ctx the parse tree
+	 */
+	enterApply?: (ctx: ApplyContext) => void;
+	/**
+	 * Exit a parse tree produced by `SmlParser.apply`.
+	 * @param ctx the parse tree
+	 */
+	exitApply?: (ctx: ApplyContext) => void;
+
+	/**
 	 * Enter a parse tree produced by `SmlParser.expression`.
 	 * @param ctx the parse tree
 	 */
@@ -522,82 +513,5 @@ export interface SmlListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitNextPattern?: (ctx: NextPatternContext) => void;
-
-	/**
-	 * Enter a parse tree produced by `SmlParser.type`.
-	 * @param ctx the parse tree
-	 */
-	enterType?: (ctx: TypeContext) => void;
-	/**
-	 * Exit a parse tree produced by `SmlParser.type`.
-	 * @param ctx the parse tree
-	 */
-	exitType?: (ctx: TypeContext) => void;
-
-	/**
-	 * Enter a parse tree produced by `SmlParser.typeDefinition`.
-	 * @param ctx the parse tree
-	 */
-	enterTypeDefinition?: (ctx: TypeDefinitionContext) => void;
-	/**
-	 * Exit a parse tree produced by `SmlParser.typeDefinition`.
-	 * @param ctx the parse tree
-	 */
-	exitTypeDefinition?: (ctx: TypeDefinitionContext) => void;
-
-	/**
-	 * Enter a parse tree produced by `SmlParser.moduleSignature`.
-	 * @param ctx the parse tree
-	 */
-	enterModuleSignature?: (ctx: ModuleSignatureContext) => void;
-	/**
-	 * Exit a parse tree produced by `SmlParser.moduleSignature`.
-	 * @param ctx the parse tree
-	 */
-	exitModuleSignature?: (ctx: ModuleSignatureContext) => void;
-
-	/**
-	 * Enter a parse tree produced by `SmlParser.structBlock`.
-	 * @param ctx the parse tree
-	 */
-	enterStructBlock?: (ctx: StructBlockContext) => void;
-	/**
-	 * Exit a parse tree produced by `SmlParser.structBlock`.
-	 * @param ctx the parse tree
-	 */
-	exitStructBlock?: (ctx: StructBlockContext) => void;
-
-	/**
-	 * Enter a parse tree produced by `SmlParser.moduleStructure`.
-	 * @param ctx the parse tree
-	 */
-	enterModuleStructure?: (ctx: ModuleStructureContext) => void;
-	/**
-	 * Exit a parse tree produced by `SmlParser.moduleStructure`.
-	 * @param ctx the parse tree
-	 */
-	exitModuleStructure?: (ctx: ModuleStructureContext) => void;
-
-	/**
-	 * Enter a parse tree produced by `SmlParser.functorApply`.
-	 * @param ctx the parse tree
-	 */
-	enterFunctorApply?: (ctx: FunctorApplyContext) => void;
-	/**
-	 * Exit a parse tree produced by `SmlParser.functorApply`.
-	 * @param ctx the parse tree
-	 */
-	exitFunctorApply?: (ctx: FunctorApplyContext) => void;
-
-	/**
-	 * Enter a parse tree produced by `SmlParser.functorDef`.
-	 * @param ctx the parse tree
-	 */
-	enterFunctorDef?: (ctx: FunctorDefContext) => void;
-	/**
-	 * Exit a parse tree produced by `SmlParser.functorDef`.
-	 * @param ctx the parse tree
-	 */
-	exitFunctorDef?: (ctx: FunctorDefContext) => void;
 }
 

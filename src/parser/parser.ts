@@ -4,10 +4,10 @@ import { ErrorNode } from 'antlr4ts/tree/ErrorNode'
 import { ParseTree } from 'antlr4ts/tree/ParseTree'
 import { RuleNode } from 'antlr4ts/tree/RuleNode'
 import { TerminalNode } from 'antlr4ts/tree/TerminalNode'
-import { display } from 'sicp'
+import { display, is_undefined } from 'sicp'
 
 import { SmlLexer } from '../lang/SmlLexer'
-import { BinopContext, BoolExpressionContext, CharExpressionContext, ExpressionListContext, IntExpressionContext, ListContext, NextPatternContext, NilListContext, RealExpressionContext, SmlParser, StringExpressionContext, UnitExpressionContext, UnopContext } from "../lang/SmlParser";
+import { ApplyContext, BinopContext, BoolExpressionContext, CharExpressionContext, ExpressionListContext, IntExpressionContext, ListContext, NextPatternContext, NilListContext, RealExpressionContext, SmlParser, StringExpressionContext, UnitExpressionContext, UnopContext } from "../lang/SmlParser";
 import { IdentifierExpressionContext } from "../lang/SmlParser";
 import { TupleExpressionContext } from "../lang/SmlParser";
 import { ListExpressionContext } from "../lang/SmlParser";
@@ -19,7 +19,6 @@ import { BinaryOperatorExpressionContext } from "../lang/SmlParser";
 import { UnaryOperatorExpressionContext } from "../lang/SmlParser";
 import { LetBlockExpressionContext } from "../lang/SmlParser";
 import { PatternMatchExpressionContext } from "../lang/SmlParser";
-import { StructAttributeExpressionContext } from "../lang/SmlParser";
 import { VariableDeclarationContext } from "../lang/SmlParser";
 import { FunctionDeclarationContext } from "../lang/SmlParser";
 import { LocalBlockDeclarationContext } from "../lang/SmlParser";
@@ -32,8 +31,6 @@ import { FunctionContext } from "../lang/SmlParser";
 import { DeclarationContext } from "../lang/SmlParser";
 import { LambdaContext } from "../lang/SmlParser";
 import { ExpressionContext } from "../lang/SmlParser";
-import { TypeContext } from "../lang/SmlParser";
-import { TypeDefinitionContext } from "../lang/SmlParser";
 import { ParenthesesContext } from '../lang/SmlParser'
 import { SmlVisitor } from '../lang/SmlVisitor'
 import { Context, ErrorSeverity, ErrorType, SourceError } from '../types'
@@ -175,7 +172,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
   visitCharExpression(ctx: CharExpressionContext): any {
     return {
       tag: 'lit',
-      val: ctx.text,
+      val: ctx.text.slice(1, -1),
       type: 'char',
       loc: contextToLocation(ctx)
     }
@@ -183,7 +180,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
   visitStringExpression(ctx: StringExpressionContext): any {
     return {
       tag: 'lit',
-      val: ctx.text,
+      val: ctx.text.slice(1, -1),
       type: 'string',
       loc: contextToLocation(ctx)
     }
@@ -193,9 +190,9 @@ class ExpressionGenerator implements SmlVisitor<any> {
   }
   visitVariable(ctx: VariableContext): any {
     return {
-      tag: 'var',
+      tag: 'val',
       sym: ctx._name.text,
-      expr: ctx._value.text,
+      expr: this.visit(ctx._value),
       loc: contextToLocation(ctx)
     }
   }
@@ -203,21 +200,28 @@ class ExpressionGenerator implements SmlVisitor<any> {
     return this.visit(ctx._body)
   }
   visitFunction(ctx: FunctionContext): any {
+    const prms = ctx._rest.map(element => element.text)
+    prms.unshift(ctx._first.text)
     return {
       tag: 'fun',
       sym: ctx._name.text,
-      prms: ctx._identifierArg.text != '' ? ctx._identifierArg.text : ctx._identifierParenthesisArg.text != '' ? ctx._identifierParenthesisArg.text : ctx._identifierTupleArg.text,
+      prms: prms,
       body: this.visit(ctx._body),
       loc: contextToLocation(ctx)
     }
   }
-  visitApplyExpression(ctx: ApplyExpressionContext): any {
+  visitApply(ctx: ApplyContext): any {
+    const args = ctx._rest.map(element => this.visit(element))
+    args.unshift(this.visit(ctx._first))
     return {
       tag: 'app',
-      fun: ctx._identifierApply.text != '' ? ctx._identifierApply.text : this.visit(ctx._lambdaApply),    // TODO: struct
-      args: this.visit(ctx._arg),
+      fun: ctx._identifierApply.text,    // TODO: struct
+      args: args,
       loc: contextToLocation(ctx)
     }
+  }
+  visitApplyExpression(ctx: ApplyExpressionContext): any {
+    return this.visit(ctx._body)
   }
   visitLocalBlockDeclaration(ctx: LocalBlockDeclarationContext): any {
     return {
@@ -259,14 +263,14 @@ class ExpressionGenerator implements SmlVisitor<any> {
     elems.unshift(this.visit(ctx._first))
     elems.reverse()
     return {
-      tag: 'lit_list',
+      tag: 'arr_lit',
       elems: elems,
       loc: contextToLocation(ctx)
     }
   }
   visitNilList(ctx: NilListContext): any {
     return {
-      tag: 'nil_list',
+      tag: 'arr_lit',
       elems: [],
       loc: contextToLocation(ctx)
     }
@@ -275,9 +279,11 @@ class ExpressionGenerator implements SmlVisitor<any> {
     return this.visit(ctx._body)
   }
   visitLambda(ctx: LambdaContext): any {
+    const prms = ctx._rest.map(element => element.text)
+    prms.unshift(ctx._first.text)
     return {
       tag: 'lam',
-      prms: ctx._identifierArg.text != '' ? ctx._identifierArg.text : ctx._identifierParenthesisArg.text != '' ? ctx._identifierParenthesisArg.text : ctx._identifierTupleArg.text,
+      prms: prms,
       body: this.visit(ctx._body),
       loc: contextToLocation(ctx)
     }
@@ -357,13 +363,13 @@ class ExpressionGenerator implements SmlVisitor<any> {
 
 
 
-  visitType(ctx: TypeContext): any {      // TODO: Check if this is correct
-    return {
-      tag: 'type',
-      val: ctx.text,
-      loc: contextToLocation(ctx)
-    }
-  }
+  // visitType(ctx: TypeContext): any {      // TODO: Check if this is correct
+  //   return {
+  //     tag: 'type',
+  //     val: ctx.text,
+  //     loc: contextToLocation(ctx)
+  //   }
+  // }
 
 
 

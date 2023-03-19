@@ -20,7 +20,6 @@ import { BinaryOperatorExpressionContext } from "./SmlParser";
 import { UnaryOperatorExpressionContext } from "./SmlParser";
 import { LetBlockExpressionContext } from "./SmlParser";
 import { PatternMatchExpressionContext } from "./SmlParser";
-import { StructAttributeExpressionContext } from "./SmlParser";
 import { ExpressionListContext } from "./SmlParser";
 import { NilListContext } from "./SmlParser";
 import { VariableDeclarationContext } from "./SmlParser";
@@ -39,15 +38,9 @@ import { UnopContext } from "./SmlParser";
 import { ListContext } from "./SmlParser";
 import { LambdaContext } from "./SmlParser";
 import { ParenthesesContext } from "./SmlParser";
+import { ApplyContext } from "./SmlParser";
 import { ExpressionContext } from "./SmlParser";
 import { NextPatternContext } from "./SmlParser";
-import { TypeContext } from "./SmlParser";
-import { TypeDefinitionContext } from "./SmlParser";
-import { ModuleSignatureContext } from "./SmlParser";
-import { StructBlockContext } from "./SmlParser";
-import { ModuleStructureContext } from "./SmlParser";
-import { FunctorApplyContext } from "./SmlParser";
-import { FunctorDefContext } from "./SmlParser";
 
 
 /**
@@ -195,14 +188,6 @@ export interface SmlVisitor<Result> extends ParseTreeVisitor<Result> {
 	visitPatternMatchExpression?: (ctx: PatternMatchExpressionContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by the `structAttributeExpression`
-	 * labeled alternative in `SmlParser.expression`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitStructAttributeExpression?: (ctx: StructAttributeExpressionContext) => Result;
-
-	/**
 	 * Visit a parse tree produced by the `expressionList`
 	 * labeled alternative in `SmlParser.list`.
 	 * @param ctx the parse tree
@@ -336,6 +321,13 @@ export interface SmlVisitor<Result> extends ParseTreeVisitor<Result> {
 	visitParentheses?: (ctx: ParenthesesContext) => Result;
 
 	/**
+	 * Visit a parse tree produced by `SmlParser.apply`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitApply?: (ctx: ApplyContext) => Result;
+
+	/**
 	 * Visit a parse tree produced by `SmlParser.expression`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -348,54 +340,5 @@ export interface SmlVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitNextPattern?: (ctx: NextPatternContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SmlParser.type`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitType?: (ctx: TypeContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SmlParser.typeDefinition`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitTypeDefinition?: (ctx: TypeDefinitionContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SmlParser.moduleSignature`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitModuleSignature?: (ctx: ModuleSignatureContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SmlParser.structBlock`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitStructBlock?: (ctx: StructBlockContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SmlParser.moduleStructure`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitModuleStructure?: (ctx: ModuleStructureContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SmlParser.functorApply`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitFunctorApply?: (ctx: FunctorApplyContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SmlParser.functorDef`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitFunctorDef?: (ctx: FunctorDefContext) => Result;
 }
 

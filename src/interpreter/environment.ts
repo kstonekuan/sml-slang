@@ -104,6 +104,6 @@ export const scan = comp =>
     comp.tag === 'seq'
         ? comp.stmts.reduce((acc, x) => acc.concat(scan(x)),
             [])
-        : ['let', 'const', 'fun'].includes(comp.tag)
+        : ['val', 'fun'].includes(comp.tag)
             ? [comp.sym]
             : []

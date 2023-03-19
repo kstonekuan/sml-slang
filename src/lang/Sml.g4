@@ -20,19 +20,9 @@ CASE: 'case';
 OF: 'of';
 NEXT_PATTERN: '|';
 
-TYPE_INT: 'int';
-TYPE_REAL: 'real';
-TYPE_STRING: 'string';
-TYPE_CHAR: 'char';
-TYPE_BOOL: 'bool';
-TYPE_UNIT: 'unit';
-TYPE_LIST: 'list';
-SINGLE_ARROW: '->';
-SIGNATURE: 'signature';
-SIG: 'sig';
-STRUCTURE: 'structure';
-STRUCT: 'struct';
-FUNCTOR: 'functor';
+// TYPE_INT: 'int'; TYPE_REAL: 'real'; TYPE_STRING: 'string'; TYPE_CHAR: 'char'; TYPE_BOOL: 'bool';
+// TYPE_UNIT: 'unit'; TYPE_LIST: 'list'; SINGLE_ARROW: '->'; SIGNATURE: 'signature'; SIG: 'sig';
+// STRUCTURE: 'structure'; STRUCT: 'struct'; FUNCTOR: 'functor';
 
 // Punctuation
 L_CURLY: '{';
@@ -69,14 +59,15 @@ BOOL: 'true' | 'false';
 UNIT: '()';
 CHAR: '"' ~["] '"';
 STRING: '"' ~["]* '"';
-IDENTIFIER: [_a-z][_a-zA-Z0-9']*;
-
-WHITESPACE: [ \r\n\t]+ -> skip;
 
 // list are linked list that starts from head to tail
 LIST_NIL: 'nil';
 LIST_CONSTRUCT: '::';
 LIST_CONCAT: '@';
+
+IDENTIFIER: [_a-z][_a-zA-Z0-9']*;
+
+WHITESPACE: [ \r\n\t]+ -> skip;
 
 /*
  * Productions
@@ -93,11 +84,9 @@ identifierTuple:
 variable: VAL name = IDENTIFIER EQUALS value = expression;
 
 function:
-	FUN name = IDENTIFIER (
-		identifierArg = IDENTIFIER
-		| '(' identifierParenthesisArg = IDENTIFIER ')'
-		| identifierTupleArg = identifierTuple
-	) EQUALS body = expression;
+	FUN name = IDENTIFIER '(' first = IDENTIFIER (
+		COMMA rest += IDENTIFIER
+	)* ')' EQUALS body = expression;
 
 declaration:
 	body = variable		# variableDeclaration
@@ -130,75 +119,57 @@ list:
 	| LIST_NIL															# nilList;
 
 lambda:
-	FN (
-		identifierArg = IDENTIFIER
-		| '(' identifierParenthesisArg = IDENTIFIER ')'
-		| identifierTupleArg = identifierTuple
-	) DOUBLE_ARROW body = expression;
+	FN '(' first = IDENTIFIER (COMMA rest += IDENTIFIER)* ')' DOUBLE_ARROW body = expression;
 
 parentheses: '(' inner = expression ')';
 
-expression:
-	INT																						# intExpression
-	| REAL																					# realExpression
-	| BOOL																					# boolExpression
-	| UNIT																					# unitExpression
-	| CHAR																					# charExpression
-	| STRING																				# stringExpression
-	| IDENTIFIER																			# identifierExpression
-	| body = parentheses																	# parenthesesExpression
-	| '(' first = expression (COMMA rest += expression)+ ')'								# tupleExpression
-	| body = list																			# listExpression
-	| IF predicate = expression THEN consequent = expression ELSE alternative = expression	#
-		conditionalExpression
-	| (
+apply:
+	(
 		identifierApply = IDENTIFIER
-		| lambdaApply = lambda
-		| structNameApply = IDENTIFIER DOT structMethodApply = IDENTIFIER
-	) arg = expression												# applyExpression
+		// | structNameApply = IDENTIFIER DOT structMethodApply = IDENTIFIER
+	) arg = '(' first = expression (COMMA rest += expression)* ')';
+
+expression:
+	INT																							# intExpression
+	| REAL																						# realExpression
+	| BOOL																						# boolExpression
+	| UNIT																						# unitExpression
+	| CHAR																						# charExpression
+	| STRING																					# stringExpression
+	| IDENTIFIER																				# identifierExpression
+	| body = parentheses																		# parenthesesExpression
+	| '(' first = expression (COMMA rest += expression)+ ')'									# tupleExpression
+	| body = list																				# listExpression
+	| IF predicate = parentheses THEN consequent = parentheses ELSE alternative = parentheses	#
+		conditionalExpression
+	| body = apply													# applyExpression
 	| body = lambda													# lambdaExpression
 	| left = expression operator = binop right = expression			# binaryOperatorExpression
 	| operator = unop expr = expression								# unaryOperatorExpression
 	| LET (declarations += declaration)+ IN body = expression END	# letBlockExpression
 	| CASE name = IDENTIFIER OF firstCase = expression DOUBLE_ARROW firstResult = expression (
 		otherPatterns += nextPattern
-	)*												# patternMatchExpression
-	| name = IDENTIFIER DOT attribute = IDENTIFIER	# structAttributeExpression; // TODO
-// accessing a struct’s attribute
+	)* # patternMatchExpression;
+// | name = IDENTIFIER DOT attribute = IDENTIFIER # structAttributeExpression; TODO accessing a
+// struct’s attribute
 
 // abstracted out of patternMatchExpression
 nextPattern:
 	NEXT_PATTERN nextCase = expression DOUBLE_ARROW nextResult = expression;
 
-type: // TODO			
-	TYPE_INT
-	| TYPE_REAL
-	| TYPE_BOOL
-	| TYPE_UNIT
-	| TYPE_STRING
-	| TYPE_CHAR
-	| type TYPE_LIST // list
-	| type MUL type // tuple
-	| type SINGLE_ARROW type // function
-	| '(' type ')';
+// type: // TODO TYPE_INT | TYPE_REAL | TYPE_BOOL | TYPE_UNIT | TYPE_STRING | TYPE_CHAR | type
+// TYPE_LIST // list | type MUL type // tuple | type SINGLE_ARROW type // function | '(' type ')';
 
-typeDefinition: VAL IDENTIFIER COLON type; // TODO
+// typeDefinition: VAL IDENTIFIER COLON type; // TODO
 
-moduleSignature: // TODO
-	SIGNATURE name = IDENTIFIER EQUALS SIG typeDefinition+ END;
+// moduleSignature: // TODO SIGNATURE name = IDENTIFIER EQUALS SIG typeDefinition+ END;
 
-structBlock: STRUCT (variable | function)+ END; // TODO
+// structBlock: STRUCT (variable | function)+ END; // TODO
 
-moduleStructure: // TODO
-	STRUCTURE name = IDENTIFIER EQUALS (
-		structBlock
-		| functorApply
-	);
+// moduleStructure: // TODO STRUCTURE name = IDENTIFIER EQUALS ( structBlock | functorApply );
 
-functorApply: // TODO
-	functorName = IDENTIFIER '(' structName = IDENTIFIER ')';
+// functorApply: // TODO functorName = IDENTIFIER '(' structName = IDENTIFIER ')';
 
-functorDef: // TODO
-	FUNCTOR name = IDENTIFIER '(' structName = IDENTIFIER COLON sigName = IDENTIFIER ')' EQUALS
-		structBlock;
+// functorDef: // TODO FUNCTOR name = IDENTIFIER '(' structName = IDENTIFIER COLON sigName =
+// IDENTIFIER ')' EQUALS structBlock;
 
