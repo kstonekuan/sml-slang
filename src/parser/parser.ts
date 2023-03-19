@@ -4,10 +4,10 @@ import { ErrorNode } from 'antlr4ts/tree/ErrorNode'
 import { ParseTree } from 'antlr4ts/tree/ParseTree'
 import { RuleNode } from 'antlr4ts/tree/RuleNode'
 import { TerminalNode } from 'antlr4ts/tree/TerminalNode'
-import { display, is_undefined } from 'sicp'
+import { display, is_null, is_undefined } from 'sicp'
 
 import { SmlLexer } from '../lang/SmlLexer'
-import { ApplyContext, BinopContext, BoolExpressionContext, CharExpressionContext, ExpressionListContext, IntExpressionContext, ListContext, NextPatternContext, NilListContext, RealExpressionContext, SmlParser, StringExpressionContext, UnitExpressionContext, UnopContext } from "../lang/SmlParser";
+import { ApplyContext, BinopContext, BoolExpressionContext, CharExpressionContext, ExpressionListContext, IdentifierContext, IntExpressionContext, ListContext, NextPatternContext, NilListContext, RealExpressionContext, SmlParser, StringExpressionContext, UnitExpressionContext, UnopContext } from "../lang/SmlParser";
 import { IdentifierExpressionContext } from "../lang/SmlParser";
 import { TupleExpressionContext } from "../lang/SmlParser";
 import { ListExpressionContext } from "../lang/SmlParser";
@@ -206,16 +206,17 @@ class ExpressionGenerator implements SmlVisitor<any> {
       tag: 'fun',
       sym: ctx._name.text,
       prms: prms,
-      body: this.visit(ctx._body),
+      body: { tag: 'ret', expr: this.visit(ctx._body) },
       loc: contextToLocation(ctx)
     }
   }
   visitApply(ctx: ApplyContext): any {
     const args = ctx._rest.map(element => this.visit(element))
     args.unshift(this.visit(ctx._first))
+    args.reverse()
     return {
       tag: 'app',
-      fun: ctx._identifierApply.text,    // TODO: struct
+      fun: this.visit(ctx._identifierApply),    // TODO: struct
       args: args,
       loc: contextToLocation(ctx)
     }
@@ -231,12 +232,15 @@ class ExpressionGenerator implements SmlVisitor<any> {
       loc: contextToLocation(ctx)
     }
   }
-  visitIdentifierExpression(ctx: IdentifierExpressionContext): any {
+  visitIdentifier(ctx: IdentifierContext): any {
     return {
       tag: 'nam',
       sym: ctx.text,
       loc: contextToLocation(ctx)
     }
+  }
+  visitIdentifierExpression(ctx: IdentifierExpressionContext): any {
+    return this.visit(ctx._body)
   }
   visitDeclarationStatement(ctx: DeclarationStatementContext): any {
     return this.visit(ctx._body)
@@ -284,7 +288,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
     return {
       tag: 'lam',
       prms: prms,
-      body: this.visit(ctx._body),
+      body: { tag: 'ret', expr: this.visit(ctx._body) },
       loc: contextToLocation(ctx)
     }
   }
@@ -314,10 +318,12 @@ class ExpressionGenerator implements SmlVisitor<any> {
   }
 
   visitTupleExpression(ctx: TupleExpressionContext): any {
+    const elems = ctx._rest.map(element => this.visit(element))
+    elems.unshift(this.visit(ctx._first))
+    elems.reverse()
     return {
       tag: 'tuple',
-      first: this.visit(ctx._first),
-      val: ctx._rest.map(element => this.visit(element)),
+      elems: elems,
       loc: contextToLocation(ctx)
     }
   }

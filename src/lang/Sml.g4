@@ -19,6 +19,7 @@ ELSE: 'else';
 CASE: 'case';
 OF: 'of';
 NEXT_PATTERN: '|';
+ASSIGN: '=';
 
 // TYPE_INT: 'int'; TYPE_REAL: 'real'; TYPE_STRING: 'string'; TYPE_CHAR: 'char'; TYPE_BOOL: 'bool';
 // TYPE_UNIT: 'unit'; TYPE_LIST: 'list'; SINGLE_ARROW: '->'; SIGNATURE: 'signature'; SIG: 'sig';
@@ -36,7 +37,7 @@ DOT: '.';
 // No Assign / reassignment in our language
 
 // Relation operators
-EQUALS: '='; // Declaration is equals too
+EQUALS: '==';
 NOT_EQUALS: '<>';
 LESS: '<';
 LESS_OR_EQUALS: '<=';
@@ -81,12 +82,12 @@ statement:
 identifierTuple:
 	'(' first = IDENTIFIER (COMMA rest += IDENTIFIER)+ ')';
 
-variable: VAL name = IDENTIFIER EQUALS value = expression;
+variable: VAL name = IDENTIFIER ASSIGN value = expression;
 
 function:
 	FUN name = IDENTIFIER '(' first = IDENTIFIER (
 		COMMA rest += IDENTIFIER
-	)* ')' EQUALS body = expression;
+	)* ')' ASSIGN body = expression;
 
 declaration:
 	body = variable		# variableDeclaration
@@ -125,9 +126,11 @@ parentheses: '(' inner = expression ')';
 
 apply:
 	(
-		identifierApply = IDENTIFIER
+		identifierApply = identifier
 		// | structNameApply = IDENTIFIER DOT structMethodApply = IDENTIFIER
 	) arg = '(' first = expression (COMMA rest += expression)* ')';
+
+identifier: IDENTIFIER;
 
 expression:
 	INT																							# intExpression
@@ -136,13 +139,13 @@ expression:
 	| UNIT																						# unitExpression
 	| CHAR																						# charExpression
 	| STRING																					# stringExpression
-	| IDENTIFIER																				# identifierExpression
+	| body = apply																				# applyExpression
+	| body = identifier																			# identifierExpression
 	| body = parentheses																		# parenthesesExpression
 	| '(' first = expression (COMMA rest += expression)+ ')'									# tupleExpression
 	| body = list																				# listExpression
 	| IF predicate = parentheses THEN consequent = parentheses ELSE alternative = parentheses	#
 		conditionalExpression
-	| body = apply													# applyExpression
 	| body = lambda													# lambdaExpression
 	| left = expression operator = binop right = expression			# binaryOperatorExpression
 	| operator = unop expr = expression								# unaryOperatorExpression
@@ -162,14 +165,14 @@ nextPattern:
 
 // typeDefinition: VAL IDENTIFIER COLON type; // TODO
 
-// moduleSignature: // TODO SIGNATURE name = IDENTIFIER EQUALS SIG typeDefinition+ END;
+// moduleSignature: // TODO SIGNATURE name = IDENTIFIER ASSIGN SIG typeDefinition+ END;
 
 // structBlock: STRUCT (variable | function)+ END; // TODO
 
-// moduleStructure: // TODO STRUCTURE name = IDENTIFIER EQUALS ( structBlock | functorApply );
+// moduleStructure: // TODO STRUCTURE name = IDENTIFIER ASSIGN ( structBlock | functorApply );
 
 // functorApply: // TODO functorName = IDENTIFIER '(' structName = IDENTIFIER ')';
 
 // functorDef: // TODO FUNCTOR name = IDENTIFIER '(' structName = IDENTIFIER COLON sigName =
-// IDENTIFIER ')' EQUALS structBlock;
+// IDENTIFIER ')' ASSIGN structBlock;
 

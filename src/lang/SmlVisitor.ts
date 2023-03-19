@@ -9,12 +9,12 @@ import { BoolExpressionContext } from "./SmlParser";
 import { UnitExpressionContext } from "./SmlParser";
 import { CharExpressionContext } from "./SmlParser";
 import { StringExpressionContext } from "./SmlParser";
+import { ApplyExpressionContext } from "./SmlParser";
 import { IdentifierExpressionContext } from "./SmlParser";
 import { ParenthesesExpressionContext } from "./SmlParser";
 import { TupleExpressionContext } from "./SmlParser";
 import { ListExpressionContext } from "./SmlParser";
 import { ConditionalExpressionContext } from "./SmlParser";
-import { ApplyExpressionContext } from "./SmlParser";
 import { LambdaExpressionContext } from "./SmlParser";
 import { BinaryOperatorExpressionContext } from "./SmlParser";
 import { UnaryOperatorExpressionContext } from "./SmlParser";
@@ -39,6 +39,7 @@ import { ListContext } from "./SmlParser";
 import { LambdaContext } from "./SmlParser";
 import { ParenthesesContext } from "./SmlParser";
 import { ApplyContext } from "./SmlParser";
+import { IdentifierContext } from "./SmlParser";
 import { ExpressionContext } from "./SmlParser";
 import { NextPatternContext } from "./SmlParser";
 
@@ -100,6 +101,14 @@ export interface SmlVisitor<Result> extends ParseTreeVisitor<Result> {
 	visitStringExpression?: (ctx: StringExpressionContext) => Result;
 
 	/**
+	 * Visit a parse tree produced by the `applyExpression`
+	 * labeled alternative in `SmlParser.expression`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitApplyExpression?: (ctx: ApplyExpressionContext) => Result;
+
+	/**
 	 * Visit a parse tree produced by the `identifierExpression`
 	 * labeled alternative in `SmlParser.expression`.
 	 * @param ctx the parse tree
@@ -138,14 +147,6 @@ export interface SmlVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitConditionalExpression?: (ctx: ConditionalExpressionContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by the `applyExpression`
-	 * labeled alternative in `SmlParser.expression`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitApplyExpression?: (ctx: ApplyExpressionContext) => Result;
 
 	/**
 	 * Visit a parse tree produced by the `lambdaExpression`
@@ -326,6 +327,13 @@ export interface SmlVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitApply?: (ctx: ApplyContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by `SmlParser.identifier`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitIdentifier?: (ctx: IdentifierContext) => Result;
 
 	/**
 	 * Visit a parse tree produced by `SmlParser.expression`.

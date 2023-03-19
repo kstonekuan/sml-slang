@@ -105,6 +105,9 @@ const microcode = {
   arr_assmt:
     cmd =>
       push(A, { 'tag': 'arr_assmt_i' }, cmd.expr, cmd.ind, cmd.arr),
+  tuple:
+    cmd =>
+      push(A, { tag: 'tuple_i', arity: cmd.elems.length }, ...cmd.elems),
 
   //
   // statements
@@ -142,7 +145,13 @@ const microcode = {
 
   //
   // instructions
-  //
+  // 
+  reset_i:
+    cmd =>
+      A.pop().tag === 'mark_i'    // mark found?  
+        ? null                    // stop loop
+        : push(A, cmd),           // continue loop by pushing same
+  // reset_i instruction back on agenda
   assmt_i:
     // peek top of stash without popping:
     // the value remains on the stash
@@ -219,6 +228,13 @@ const microcode = {
       const arr = S.pop()
       arr[ind] = val
       push(S, val)
+    },
+  tuple_i:
+    cmd => {
+      const arity = cmd.arity
+      const array = S.slice(- arity - 1, S.length)
+      S = S.slice(0, - arity)
+      push(S, { tuple: array })
     },
 }
 

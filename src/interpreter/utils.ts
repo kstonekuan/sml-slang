@@ -35,7 +35,7 @@ const binop_microcode = {
     '<=': (x, y) => x <= y,
     '>=': (x, y) => x >= y,
     '>': (x, y) => x > y,
-    '=': (x, y) => x === y,
+    '==': (x, y) => x === y,
     '<>': (x, y) => x !== y
 }
 
