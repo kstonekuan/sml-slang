@@ -23,6 +23,7 @@ import { PatternMatchExpressionContext } from "./SmlParser";
 import { ExpressionListContext } from "./SmlParser";
 import { NilListContext } from "./SmlParser";
 import { VariableDeclarationContext } from "./SmlParser";
+import { LetrecDeclarationContext } from "./SmlParser";
 import { FunctionDeclarationContext } from "./SmlParser";
 import { LocalBlockDeclarationContext } from "./SmlParser";
 import { DeclarationStatementContext } from "./SmlParser";
@@ -31,6 +32,7 @@ import { StartContext } from "./SmlParser";
 import { StatementContext } from "./SmlParser";
 import { IdentifierTupleContext } from "./SmlParser";
 import { VariableContext } from "./SmlParser";
+import { LetrecContext } from "./SmlParser";
 import { FunctionContext } from "./SmlParser";
 import { DeclarationContext } from "./SmlParser";
 import { BinopContext } from "./SmlParser";
@@ -310,6 +312,19 @@ export interface SmlListener extends ParseTreeListener {
 	exitVariableDeclaration?: (ctx: VariableDeclarationContext) => void;
 
 	/**
+	 * Enter a parse tree produced by the `letrecDeclaration`
+	 * labeled alternative in `SmlParser.declaration`.
+	 * @param ctx the parse tree
+	 */
+	enterLetrecDeclaration?: (ctx: LetrecDeclarationContext) => void;
+	/**
+	 * Exit a parse tree produced by the `letrecDeclaration`
+	 * labeled alternative in `SmlParser.declaration`.
+	 * @param ctx the parse tree
+	 */
+	exitLetrecDeclaration?: (ctx: LetrecDeclarationContext) => void;
+
+	/**
 	 * Enter a parse tree produced by the `functionDeclaration`
 	 * labeled alternative in `SmlParser.declaration`.
 	 * @param ctx the parse tree
@@ -404,6 +419,17 @@ export interface SmlListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitVariable?: (ctx: VariableContext) => void;
+
+	/**
+	 * Enter a parse tree produced by `SmlParser.letrec`.
+	 * @param ctx the parse tree
+	 */
+	enterLetrec?: (ctx: LetrecContext) => void;
+	/**
+	 * Exit a parse tree produced by `SmlParser.letrec`.
+	 * @param ctx the parse tree
+	 */
+	exitLetrec?: (ctx: LetrecContext) => void;
 
 	/**
 	 * Enter a parse tree produced by `SmlParser.function`.

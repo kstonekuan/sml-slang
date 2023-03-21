@@ -20,6 +20,7 @@ import { UnaryOperatorExpressionContext } from "../lang/SmlParser";
 import { LetBlockExpressionContext } from "../lang/SmlParser";
 import { PatternMatchExpressionContext } from "../lang/SmlParser";
 import { VariableDeclarationContext } from "../lang/SmlParser";
+import { LetrecDeclarationContext } from "../lang/SmlParser";
 import { FunctionDeclarationContext } from "../lang/SmlParser";
 import { LocalBlockDeclarationContext } from "../lang/SmlParser";
 import { DeclarationStatementContext } from "../lang/SmlParser";
@@ -27,6 +28,7 @@ import { ExpressionStatementContext } from "../lang/SmlParser";
 import { StartContext } from "../lang/SmlParser";
 import { StatementContext } from "../lang/SmlParser";
 import { VariableContext } from "../lang/SmlParser";
+import { LetrecContext } from "../lang/SmlParser";
 import { FunctionContext } from "../lang/SmlParser";
 import { DeclarationContext } from "../lang/SmlParser";
 import { LambdaContext } from "../lang/SmlParser";
@@ -188,6 +190,17 @@ class ExpressionGenerator implements SmlVisitor<any> {
       tag: 'val',
       sym: ctx._name.text,
       expr: this.visit(ctx._value),
+    }
+  }
+  visitLetrecDeclaration(ctx: LetrecDeclarationContext): any {
+    return this.visit(ctx._body)
+  }
+  visitLetrec(ctx: LetrecContext): any {
+    return {
+      tag: 'letrec',
+      sym: ctx._name.text,
+      expr: this.visit(ctx._value),
+      loc: contextToLocation(ctx)
     }
   }
   visitFunctionDeclaration(ctx: FunctionDeclarationContext): any {
