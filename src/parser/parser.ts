@@ -213,7 +213,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
       tag: 'fun',
       sym: ctx._name.text,
       prms: prms,
-      body: { tag: 'ret', expr: this.visit(ctx._body) },
+      body: this.visit(ctx._body),
     }
   }
   visitApply(ctx: ApplyContext): any {
@@ -289,7 +289,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
     return {
       tag: 'lam',
       prms: prms,
-      body: { tag: 'ret', expr: this.visit(ctx._body) },
+      body: this.visit(ctx._body),
     }
   }
   visitBinaryOperatorExpression(ctx: BinaryOperatorExpressionContext): any {

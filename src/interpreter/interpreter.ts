@@ -128,18 +128,19 @@ const microcode = {
       E = extend(locals, unassigneds, E)
     },
   val:
-    cmd =>
+    cmd => {
+      if (cmd.tag === 'lam') {
+        cmd.body = { tag: 'nonrec', body: cmd.body }
+      }
       push(A, { tag: 'lit', val: undefined },
         { tag: 'pop_i' },
-        { tag: 'assmt', sym: cmd.sym, expr: cmd.expr }),
+        { tag: 'assmt', sym: cmd.sym, expr: cmd.expr })
+    },
   letrec:
     cmd =>
       push(A, { tag: 'lit', val: undefined },
         { tag: 'pop_i' },
         { tag: 'assmt', sym: cmd.sym, expr: cmd.expr }),
-  ret:
-    cmd =>
-      push(A, { tag: 'reset_i' }, cmd.expr),
   fun:
     cmd =>
       push(A, {
@@ -151,11 +152,6 @@ const microcode = {
   //
   // instructions
   // 
-  reset_i:
-    cmd =>
-      A.pop().tag === 'mark_i'    // mark found?  
-        ? null                    // stop loop
-        : push(A, cmd),           // continue loop by pushing same
   // reset_i instruction back on agenda
   assmt_i:
     // peek top of stash without popping:
@@ -183,21 +179,11 @@ const microcode = {
         return push(S, apply_builtin(sf.sym, args))
       // remaining case: sf.tag === 'closure'
       if (A.length === 0 || peek(A).tag === 'env_i') {
-        // current E not needed:
-        // just push mark, and not env_i
-        push(A, { tag: 'mark_i' })
-      } else if (peek(A).tag === 'reset_i') {
-        // tail call: 
-        // The callee's ret_i will push another reset_i
-        // which will go to the correct mark.
-        A.pop()
-        // The current E is not needed, because
-        // the following reset_i is the last body 
-        // instruction to be executed.
+        // current E not needed, tail call?
       } else {
         // general case:
         // push current environment
-        push(A, { tag: 'env_i', env: E }, { tag: 'mark_i' })
+        push(A, { tag: 'env_i', env: E })
       }
       push(A, sf.body)
       E = extend(sf.prms, args, sf.env)
