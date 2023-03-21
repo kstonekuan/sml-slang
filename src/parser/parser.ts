@@ -144,7 +144,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
       tag: 'lit',
       val: parseInt(ctx.text),
       type: 'int',
-      loc: contextToLocation(ctx)
+      // loc: contextToLocation(ctx)
     }
   }
   visitRealExpression(ctx: RealExpressionContext): any {
@@ -152,7 +152,6 @@ class ExpressionGenerator implements SmlVisitor<any> {
       tag: 'lit',
       val: parseFloat(ctx.text),
       type: 'real',
-      loc: contextToLocation(ctx)
     }
   }
   visitBoolExpression(ctx: BoolExpressionContext): any {
@@ -160,7 +159,6 @@ class ExpressionGenerator implements SmlVisitor<any> {
       tag: 'lit',
       val: ctx.text === 'true',
       type: 'bool',
-      loc: contextToLocation(ctx)
     }
   }
   visitUnitExpression(ctx: UnitExpressionContext): any {
@@ -168,7 +166,6 @@ class ExpressionGenerator implements SmlVisitor<any> {
       tag: 'lit',
       val: ctx.text,
       type: 'unit',
-      loc: contextToLocation(ctx)
     }
   }
   visitCharExpression(ctx: CharExpressionContext): any {
@@ -176,7 +173,6 @@ class ExpressionGenerator implements SmlVisitor<any> {
       tag: 'lit',
       val: ctx.text.slice(1, -1),
       type: 'char',
-      loc: contextToLocation(ctx)
     }
   }
   visitStringExpression(ctx: StringExpressionContext): any {
@@ -184,7 +180,6 @@ class ExpressionGenerator implements SmlVisitor<any> {
       tag: 'lit',
       val: ctx.text.slice(1, -1),
       type: 'string',
-      loc: contextToLocation(ctx)
     }
   }
   visitVariableDeclaration(ctx: VariableDeclarationContext): any {
@@ -195,7 +190,6 @@ class ExpressionGenerator implements SmlVisitor<any> {
       tag: 'val',
       sym: ctx._name.text,
       expr: this.visit(ctx._value),
-      loc: contextToLocation(ctx)
     }
   }
   visitLetrecDeclaration(ctx: LetrecDeclarationContext): any {
@@ -210,6 +204,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
     }
   }
   visitFunctionDeclaration(ctx: FunctionDeclarationContext): any {
+    display('function declaration')
     return this.visit(ctx._body)
   }
   visitFunction(ctx: FunctionContext): any {
@@ -220,7 +215,6 @@ class ExpressionGenerator implements SmlVisitor<any> {
       sym: ctx._name.text,
       prms: prms,
       body: { tag: 'ret', expr: this.visit(ctx._body) },
-      loc: contextToLocation(ctx)
     }
   }
   visitApply(ctx: ApplyContext): any {
@@ -231,7 +225,6 @@ class ExpressionGenerator implements SmlVisitor<any> {
       tag: 'app',
       fun: this.visit(ctx._identifierApply),    // TODO: struct
       args: args,
-      loc: contextToLocation(ctx)
     }
   }
   visitApplyExpression(ctx: ApplyExpressionContext): any {
@@ -242,14 +235,12 @@ class ExpressionGenerator implements SmlVisitor<any> {
       tag: 'loc',
       locals: ctx._declarations.map(declaration => this.visit(declaration)),
       globals: ctx._body.map(declaration => this.visit(declaration)),
-      loc: contextToLocation(ctx)
     }
   }
   visitIdentifier(ctx: IdentifierContext): any {
     return {
       tag: 'nam',
       sym: ctx.text,
-      loc: contextToLocation(ctx)
     }
   }
   visitIdentifierExpression(ctx: IdentifierExpressionContext): any {
@@ -282,14 +273,12 @@ class ExpressionGenerator implements SmlVisitor<any> {
     return {
       tag: 'arr_lit',
       elems: elems,
-      loc: contextToLocation(ctx)
     }
   }
   visitNilList(ctx: NilListContext): any {
     return {
       tag: 'arr_lit',
       elems: [],
-      loc: contextToLocation(ctx)
     }
   }
   visitLambdaExpression(ctx: LambdaExpressionContext): any {
@@ -302,7 +291,6 @@ class ExpressionGenerator implements SmlVisitor<any> {
       tag: 'lam',
       prms: prms,
       body: { tag: 'ret', expr: this.visit(ctx._body) },
-      loc: contextToLocation(ctx)
     }
   }
   visitBinaryOperatorExpression(ctx: BinaryOperatorExpressionContext): any {
@@ -312,7 +300,6 @@ class ExpressionGenerator implements SmlVisitor<any> {
       sym: this.visit(ctx._operator),
       frst: this.visit(ctx._left),
       scnd: this.visit(ctx._right),
-      loc: contextToLocation(ctx)
     }
   }
   visitBinop(ctx: BinopContext): any {
@@ -323,7 +310,6 @@ class ExpressionGenerator implements SmlVisitor<any> {
       tag: 'unop',
       sym: this.visit(ctx._operator),
       frst: this.visit(ctx._expr),
-      loc: contextToLocation(ctx)
     }
   }
   visitUnop(ctx: UnopContext): any {
@@ -337,7 +323,6 @@ class ExpressionGenerator implements SmlVisitor<any> {
     return {
       tag: 'tuple',
       elems: elems,
-      loc: contextToLocation(ctx)
     }
   }
   visitListExpression(ctx: ListExpressionContext): any {
@@ -350,15 +335,14 @@ class ExpressionGenerator implements SmlVisitor<any> {
       pred: this.visit(ctx._predicate),
       cons: this.visit(ctx._consequent),
       alt: this.visit(ctx._alternative),
-      loc: contextToLocation(ctx)
     }
   }
   visitLetBlockExpression(ctx: LetBlockExpressionContext): any {
+    const elems = ctx._declarations.map(element => this.visit(element))
     return {
       tag: 'let',
-      declarations: ctx._declarations.map(declaration => this.visit(declaration)),
+      declarations: elems,
       expr: this.visit(ctx._body),
-      loc: contextToLocation(ctx)
     }
   }
   visitPatternMatchExpression(ctx: PatternMatchExpressionContext): any {
@@ -368,7 +352,6 @@ class ExpressionGenerator implements SmlVisitor<any> {
       first: this.visit(ctx._firstCase),
       first_result: this.visit(ctx._firstResult),
       rest: ctx._otherPatterns.map(pat => this.visit(pat)),
-      loc: contextToLocation(ctx)
     }
   }
   visitNextPattern(ctx: NextPatternContext): any {
@@ -376,7 +359,6 @@ class ExpressionGenerator implements SmlVisitor<any> {
       tag: 'next_pat',
       case: this.visit(ctx._nextCase),
       result: this.visit(ctx._nextResult),
-      loc: contextToLocation(ctx)
     }
   }
 
@@ -390,61 +372,6 @@ class ExpressionGenerator implements SmlVisitor<any> {
   //   }
   // }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  // visitMultiplication(ctx: MultiplicationContext): any {
-  //   return {
-  //     type: 'BinaryExpression',
-  //     operator: '*',
-  //     left: this.visit(ctx._left),
-  //     right: this.visit(ctx._right),
-  //     loc: contextToLocation(ctx)
-  //   }
-  // }
-  // visitDivision(ctx: DivisionContext): any {
-  //   return {
-  //     type: 'BinaryExpression',
-  //     operator: '/',
-  //     left: this.visit(ctx._left),
-  //     right: this.visit(ctx._right),
-  //     loc: contextToLocation(ctx)
-  //   }
-  // }
-  // visitAddition(ctx: AdditionContext): any {
-  //   return {
-  //     type: 'BinaryExpression',
-  //     operator: '+',
-  //     left: this.visit(ctx._left),
-  //     right: this.visit(ctx._right),
-  //     loc: contextToLocation(ctx)
-  //   }
-  // }
-
-  // visitSubtraction(ctx: SubtractionContext): any {
-  //   return {
-  //     type: 'BinaryExpression',
-  //     operator: '-',
-  //     left: this.visit(ctx._left),
-  //     right: this.visit(ctx._right),
-  //     loc: contextToLocation(ctx)
-  //   }
-  // }
-
-  // visitExpression?: ((ctx: ExpressionContext) => any) | undefined
-  // visitStart?: ((ctx: StartContext) => any) | undefined
 
   visit(tree: ParseTree): any {
     return tree.accept(this)
