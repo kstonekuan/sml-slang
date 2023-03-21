@@ -232,7 +232,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
   }
   visitLocalBlockDeclaration(ctx: LocalBlockDeclarationContext): any {
     return {
-      tag: 'loc',
+      tag: 'local',
       locals: ctx._declarations.map(declaration => this.visit(declaration)),
       globals: ctx._body.map(declaration => this.visit(declaration)),
     }
