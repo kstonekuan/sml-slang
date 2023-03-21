@@ -335,17 +335,17 @@ class ExpressionGenerator implements SmlVisitor<any> {
     }
   }
   visitPatternMatchExpression(ctx: PatternMatchExpressionContext): any {
+    const pats = ctx._otherPatterns.map(pat => this.visit(pat))
+    pats.unshift({ tag: 'pat', case: this.visit(ctx._firstCase), result: this.visit(ctx._firstResult) })
     return {
       tag: 'pat_match',
-      name: ctx._name.text,
-      first: this.visit(ctx._firstCase),
-      first_result: this.visit(ctx._firstResult),
-      rest: ctx._otherPatterns.map(pat => this.visit(pat)),
+      val: this.visit(ctx._value),
+      cases: pats.map(pat => pat.case).reverse(),
+      results: pats.map(pat => pat.result),
     }
   }
   visitNextPattern(ctx: NextPatternContext): any {
     return {
-      tag: 'next_pat',
       case: this.visit(ctx._nextCase),
       result: this.visit(ctx._nextResult),
     }
@@ -482,7 +482,7 @@ export function parse(source: string, context: Context) {
     if (error instanceof FatalSyntaxError) {
       context.errors.push(error)
     } else {
-      throw error
+      display(error)
     }
   }
   const hasErrors = context.errors.find(m => m.severity === ErrorSeverity.ERROR)

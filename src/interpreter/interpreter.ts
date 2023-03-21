@@ -152,11 +152,28 @@ const microcode = {
         sym: cmd.sym,
         expr: { tag: 'lam', prms: cmd.prms, body: cmd.body }
       }),
+  pat_match:
+    cmd =>
+      push(A, { tag: 'pat_match_i', results: cmd.results }, ...cmd.cases, cmd.val), // cases are reversed but not results
 
   //
   // instructions
   // 
-  // reset_i instruction back on agenda
+  pat_match_i:
+    cmd => {
+      const arity = cmd.results.length
+      const cases: any[] = []
+      for (let i = arity - 1; i >= 0; i--)
+        cases[i] = S.pop()
+      const val = S.pop()
+      for (let i = 0; i < arity; i++) {
+        if (cases[i] === val) {
+          push(A, cmd.results[i])
+          return
+        }
+      }
+      push(S, undefined)
+    },
   assmt_i:
     // peek top of stash without popping:
     // the value remains on the stash
@@ -270,10 +287,10 @@ export function execute(program: any) {
     i++
   }
   if (i === step_limit) {
-    error("step limit " + stringify(step_limit) + " exceeded")
+    display("step limit " + stringify(step_limit) + " exceeded")
   }
   if (S.length > 1 || S.length < 1) {
-    error(S, 'internal error: stash must be singleton but is: ')
+    display(S, 'internal error: stash must be singleton but is: ')
   }
   return display(S[0])
 

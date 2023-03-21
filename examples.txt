@@ -14,5 +14,9 @@ if (x == 1) then (5) else (2)
 
 fun f (x) = if (x == 0) then (x) else (x + f(x-1))
 val rec f = fn (x) => if (x == 0) then (x) else (x + f(x-1))
-
 f(5)
+
+val a = 1
+case a of 0 => "ze" + "ro"
+| 1 => "o" + "ne"
+| 2 => "tw" + "o"

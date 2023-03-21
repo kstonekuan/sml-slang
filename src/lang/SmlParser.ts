@@ -940,7 +940,7 @@ export class SmlParser extends Parser {
 				this.state = 166;
 				this.match(SmlParser.CASE);
 				this.state = 167;
-				(_localctx as PatternMatchExpressionContext)._name = this.match(SmlParser.IDENTIFIER);
+				(_localctx as PatternMatchExpressionContext)._value = this.identifier();
 				this.state = 168;
 				this.match(SmlParser.OF);
 				this.state = 169;
@@ -1131,7 +1131,7 @@ export class SmlParser extends Parser {
 		"\xA1\x05\f\x07\x02\xA0\x9F\x03\x02\x02\x02\xA1\xA2\x03\x02\x02\x02\xA2" +
 		"\xA0\x03\x02\x02\x02\xA2\xA3\x03\x02\x02\x02\xA3\xA4\x03\x02\x02\x02\xA4" +
 		"\xA5\x07\b\x02\x02\xA5\xA6\x05\x1C\x0F\x02\xA6\xA7\x07\t\x02\x02\xA7\xB5" +
-		"\x03\x02\x02\x02\xA8\xA9\x07\x11\x02\x02\xA9\xAA\x072\x02\x02\xAA\xAB" +
+		"\x03\x02\x02\x02\xA8\xA9\x07\x11\x02\x02\xA9\xAA\x05\x1A\x0E\x02\xAA\xAB" +
 		"\x07\x12\x02\x02\xAB\xAC\x05\x1C\x0F\x02\xAC\xAD\x07\f\x02\x02\xAD\xB1" +
 		"\x05\x1C\x0F\x02\xAE\xB0\x05\x1E\x10\x02\xAF\xAE\x03\x02\x02\x02\xB0\xB3" +
 		"\x03\x02\x02\x02\xB1\xAF\x03\x02\x02\x02\xB1\xB2\x03\x02\x02\x02\xB2\xB5" +
@@ -2362,7 +2362,7 @@ export class LetBlockExpressionContext extends ExpressionContext {
 	}
 }
 export class PatternMatchExpressionContext extends ExpressionContext {
-	public _name!: Token;
+	public _value!: IdentifierContext;
 	public _firstCase!: ExpressionContext;
 	public _firstResult!: ExpressionContext;
 	public _nextPattern!: NextPatternContext;
@@ -2370,7 +2370,9 @@ export class PatternMatchExpressionContext extends ExpressionContext {
 	public CASE(): TerminalNode { return this.getToken(SmlParser.CASE, 0); }
 	public OF(): TerminalNode { return this.getToken(SmlParser.OF, 0); }
 	public DOUBLE_ARROW(): TerminalNode { return this.getToken(SmlParser.DOUBLE_ARROW, 0); }
-	public IDENTIFIER(): TerminalNode { return this.getToken(SmlParser.IDENTIFIER, 0); }
+	public identifier(): IdentifierContext {
+		return this.getRuleContext(0, IdentifierContext);
+	}
 	public expression(): ExpressionContext[];
 	public expression(i: number): ExpressionContext;
 	public expression(i?: number): ExpressionContext | ExpressionContext[] {
