@@ -108,6 +108,9 @@ const microcode = {
   let:
     cmd =>
       push(A, { tag: 'let_i', locals: cmd.declarations, expr: cmd.expr }),
+  local:
+    cmd =>
+      push(A, { tag: 'local_i', locals: cmd.locals, globals: cmd.globals }),
 
   //
   // statements
@@ -223,17 +226,51 @@ const microcode = {
   let_i:
     cmd => {
       const locals = []
-      for (let i = 0; i < cmd.locals.length; i++) // scan for local declarations
-        locals.unshift(scan(cmd.locals[i]))
+      // Unpacking and scanning for declarations we have parsed as an array
+      for (let i = 0; i < cmd.locals.length; i++) 
+        locals.unshift(scan(cmd.locals[i]))       
       const unassigneds = locals.map(_ => unassigned)
       if (!(A.length === 0))
-        push(A, { tag: 'env_i', env: E })   // restore current env after expr
-      push(A, cmd.expr)                     // expression
+        push(A, { tag: 'env_i', env: E })   // restore current env after let block
+      push(A, cmd.expr)                     // expression in let block after 'in' keyword
       for (let i = cmd.locals.length - 1; i >= 0; i--) { // run local declarations
         push(A, { tag: 'pop_i' })             // pop result of declaration which is undeclared. 
         push(A, cmd.locals[i])
       }
       E = extend(locals, unassigneds, E)
+    },
+  local_i:
+    cmd => {
+      // Unpacking and scanning for declarations we have parsed as an array
+      const locals = []
+      for (let i = 0; i < cmd.locals.length; i++) 
+        locals.unshift(scan(cmd.locals[i]))      
+      const globals = []
+      for (let i = 0; i < cmd.globals.length; i++)
+        globals.unshift(scan(cmd.globals[i]))
+
+      const unassigned_locals = locals.map(_ => unassigned)
+      const unassigned_globals = globals.map(_ => unassigned)
+      
+      // Let globals be declared in the enclosing frame of locals, and it will be used in the program thereafter
+      E = extend(globals, unassigned_globals, E)
+
+      if (!(A.length === 0))
+        push(A, { tag: 'env_i', env: E })   // restore to the frame which contains the global declarations
+ 
+      // Let global declarations be at the bottom of the Agenda so that we run them after local declarations
+      for (let i = cmd.globals.length - 1; i >= 0; i--) { 
+        push(A, { tag: 'pop_i' })             // pop result of declaration which is undeclared. 
+        push(A, cmd.globals[i])
+      }
+
+      for (let i = cmd.locals.length - 1; i >= 0; i--) { // run local declarations
+        push(A, { tag: 'pop_i' })             // pop result of declaration which is undeclared. 
+        push(A, cmd.locals[i])
+      }
+
+      // Locals will be declared in the deepest env frame which will then be forgotten after restoring to its enclosing frame
+      E = extend(locals, unassigned_locals, E)
     },
 }
 
