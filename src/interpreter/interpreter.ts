@@ -105,9 +105,6 @@ const microcode = {
   arr_assmt:
     cmd =>
       push(A, { tag: 'arr_assmt_i' }, cmd.expr, cmd.ind, cmd.arr),
-  tuple:
-    cmd =>
-      push(A, { tag: 'tuple_i', arity: cmd.elems.length }, ...cmd.elems),
   let:
     cmd =>
       push(A, { tag: 'let_i', locals: cmd.declarations, expr: cmd.expr }),
@@ -236,13 +233,6 @@ const microcode = {
       const arr = S.pop()
       arr[ind] = val
       push(S, val)
-    },
-  tuple_i:
-    cmd => {
-      const arity = cmd.arity
-      const array = S.slice(- arity - 1, S.length)
-      S = S.slice(0, - arity)
-      push(S, { tuple: array })
     },
   let_i:
     cmd => {

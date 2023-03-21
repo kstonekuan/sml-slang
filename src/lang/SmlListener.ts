@@ -12,7 +12,6 @@ import { StringExpressionContext } from "./SmlParser";
 import { ApplyExpressionContext } from "./SmlParser";
 import { IdentifierExpressionContext } from "./SmlParser";
 import { ParenthesesExpressionContext } from "./SmlParser";
-import { TupleExpressionContext } from "./SmlParser";
 import { ListExpressionContext } from "./SmlParser";
 import { ConditionalExpressionContext } from "./SmlParser";
 import { LambdaExpressionContext } from "./SmlParser";
@@ -30,7 +29,6 @@ import { DeclarationStatementContext } from "./SmlParser";
 import { ExpressionStatementContext } from "./SmlParser";
 import { StartContext } from "./SmlParser";
 import { StatementContext } from "./SmlParser";
-import { IdentifierTupleContext } from "./SmlParser";
 import { VariableContext } from "./SmlParser";
 import { LetrecContext } from "./SmlParser";
 import { FunctionContext } from "./SmlParser";
@@ -167,19 +165,6 @@ export interface SmlListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitParenthesesExpression?: (ctx: ParenthesesExpressionContext) => void;
-
-	/**
-	 * Enter a parse tree produced by the `tupleExpression`
-	 * labeled alternative in `SmlParser.expression`.
-	 * @param ctx the parse tree
-	 */
-	enterTupleExpression?: (ctx: TupleExpressionContext) => void;
-	/**
-	 * Exit a parse tree produced by the `tupleExpression`
-	 * labeled alternative in `SmlParser.expression`.
-	 * @param ctx the parse tree
-	 */
-	exitTupleExpression?: (ctx: TupleExpressionContext) => void;
 
 	/**
 	 * Enter a parse tree produced by the `listExpression`
@@ -397,17 +382,6 @@ export interface SmlListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitStatement?: (ctx: StatementContext) => void;
-
-	/**
-	 * Enter a parse tree produced by `SmlParser.identifierTuple`.
-	 * @param ctx the parse tree
-	 */
-	enterIdentifierTuple?: (ctx: IdentifierTupleContext) => void;
-	/**
-	 * Exit a parse tree produced by `SmlParser.identifierTuple`.
-	 * @param ctx the parse tree
-	 */
-	exitIdentifierTuple?: (ctx: IdentifierTupleContext) => void;
 
 	/**
 	 * Enter a parse tree produced by `SmlParser.variable`.
