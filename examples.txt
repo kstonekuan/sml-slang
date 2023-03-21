@@ -11,3 +11,8 @@ a(())
 fun a(x) = x + 1
 a(5)
 if (x == 1) then (5) else (2)
+
+fun f (x) = if (x == 0) then (x) else (x + f(x-1))
+val rec f = fn (x) => if (x == 0) then (x) else (x + f(x-1))
+
+f(5)

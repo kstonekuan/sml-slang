@@ -5,7 +5,7 @@ import { error, head, is_null, pair, tail } from 'sicp';
  * ************/
 // Frames are objects that map symbols (strings) to values.
 
-const global_frame = {}
+const global_frame: any = {}
 
 // // fill global frame with built-in objects
 // for (const key in builtin_mapping)
@@ -14,8 +14,9 @@ const global_frame = {}
 //         sym: key,
 //         arity: arity(builtin_mapping[key])
 //     }
-// // fill global frame with built-in constants
-// global_frame.undefined = undefined
+// fill global frame with built-in constants
+global_frame.undefined = undefined
+global_frame.rec = true // allow any type of function to be called from the top-level
 // global_frame.math_E = math_E
 // global_frame.math_LN10 = math_LN10
 // global_frame.math_LN2 = math_LN2
@@ -104,6 +105,6 @@ export const scan = comp =>
     comp.tag === 'seq'
         ? comp.stmts.reduce((acc, x) => acc.concat(scan(x)),
             [])
-        : ['val', 'fun'].includes(comp.tag)
+        : ['val', 'fun', 'letrec'].includes(comp.tag)
             ? [comp.sym]
             : []
