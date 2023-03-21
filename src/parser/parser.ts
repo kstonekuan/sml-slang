@@ -9,7 +9,6 @@ import { display, is_null, is_undefined } from 'sicp'
 import { SmlLexer } from '../lang/SmlLexer'
 import { ApplyContext, BinopContext, BoolExpressionContext, CharExpressionContext, ExpressionListContext, IdentifierContext, IntExpressionContext, ListContext, NextPatternContext, NilListContext, RealExpressionContext, SmlParser, StringExpressionContext, UnitExpressionContext, UnopContext } from "../lang/SmlParser";
 import { IdentifierExpressionContext } from "../lang/SmlParser";
-import { TupleExpressionContext } from "../lang/SmlParser";
 import { ListExpressionContext } from "../lang/SmlParser";
 import { ConditionalExpressionContext } from "../lang/SmlParser";
 import { ApplyExpressionContext } from "../lang/SmlParser";
@@ -314,16 +313,6 @@ class ExpressionGenerator implements SmlVisitor<any> {
   }
   visitUnop(ctx: UnopContext): any {
     return ctx.text
-  }
-
-  visitTupleExpression(ctx: TupleExpressionContext): any {
-    const elems = ctx._rest.map(element => this.visit(element))
-    elems.unshift(this.visit(ctx._first))
-    elems.reverse()
-    return {
-      tag: 'tuple',
-      elems: elems,
-    }
   }
   visitListExpression(ctx: ListExpressionContext): any {
     return this.visit(ctx._body)

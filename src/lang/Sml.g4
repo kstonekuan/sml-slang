@@ -79,8 +79,7 @@ statement:
 	body = declaration	# declarationStatement
 	| body = expression	# expressionStatement;
 
-identifierTuple:
-	'(' first = IDENTIFIER (COMMA rest += IDENTIFIER)+ ')';
+// identifierTuple: '(' first = IDENTIFIER (COMMA rest += IDENTIFIER)+ ')';
 
 variable: VAL name = IDENTIFIER ASSIGN value = expression;
 
@@ -136,16 +135,16 @@ apply:
 identifier: IDENTIFIER;
 
 expression:
-	INT																							# intExpression
-	| REAL																						# realExpression
-	| BOOL																						# boolExpression
-	| UNIT																						# unitExpression
-	| CHAR																						# charExpression
-	| STRING																					# stringExpression
-	| body = apply																				# applyExpression
-	| body = identifier																			# identifierExpression
-	| body = parentheses																		# parenthesesExpression
-	| '(' first = expression (COMMA rest += expression)+ ')'									# tupleExpression
+	INT						# intExpression
+	| REAL					# realExpression
+	| BOOL					# boolExpression
+	| UNIT					# unitExpression
+	| CHAR					# charExpression
+	| STRING				# stringExpression
+	| body = apply			# applyExpression
+	| body = identifier		# identifierExpression
+	| body = parentheses	# parenthesesExpression
+	// | '(' first = expression (COMMA rest += expression)+ ')'									# tupleExpression
 	| body = list																				# listExpression
 	| IF predicate = parentheses THEN consequent = parentheses ELSE alternative = parentheses	#
 		conditionalExpression

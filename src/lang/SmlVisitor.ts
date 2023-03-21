@@ -12,7 +12,6 @@ import { StringExpressionContext } from "./SmlParser";
 import { ApplyExpressionContext } from "./SmlParser";
 import { IdentifierExpressionContext } from "./SmlParser";
 import { ParenthesesExpressionContext } from "./SmlParser";
-import { TupleExpressionContext } from "./SmlParser";
 import { ListExpressionContext } from "./SmlParser";
 import { ConditionalExpressionContext } from "./SmlParser";
 import { LambdaExpressionContext } from "./SmlParser";
@@ -30,7 +29,6 @@ import { DeclarationStatementContext } from "./SmlParser";
 import { ExpressionStatementContext } from "./SmlParser";
 import { StartContext } from "./SmlParser";
 import { StatementContext } from "./SmlParser";
-import { IdentifierTupleContext } from "./SmlParser";
 import { VariableContext } from "./SmlParser";
 import { LetrecContext } from "./SmlParser";
 import { FunctionContext } from "./SmlParser";
@@ -125,14 +123,6 @@ export interface SmlVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitParenthesesExpression?: (ctx: ParenthesesExpressionContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by the `tupleExpression`
-	 * labeled alternative in `SmlParser.expression`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitTupleExpression?: (ctx: TupleExpressionContext) => Result;
 
 	/**
 	 * Visit a parse tree produced by the `listExpression`
@@ -267,13 +257,6 @@ export interface SmlVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitStatement?: (ctx: StatementContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SmlParser.identifierTuple`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitIdentifierTuple?: (ctx: IdentifierTupleContext) => Result;
 
 	/**
 	 * Visit a parse tree produced by `SmlParser.variable`.
