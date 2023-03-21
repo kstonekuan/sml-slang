@@ -132,13 +132,18 @@ const microcode = {
       push(A, { tag: 'lit', val: undefined },
         { tag: 'pop_i' },
         { tag: 'assmt', sym: cmd.sym, expr: cmd.expr }),
+  letrec:
+    cmd =>
+      push(A, { tag: 'lit', val: undefined },
+        { tag: 'pop_i' },
+        { tag: 'assmt', sym: cmd.sym, expr: cmd.expr }),
   ret:
     cmd =>
       push(A, { tag: 'reset_i' }, cmd.expr),
   fun:
     cmd =>
       push(A, {
-        tag: 'val',
+        tag: 'letrec',
         sym: cmd.sym,
         expr: { tag: 'lam', prms: cmd.prms, body: cmd.body }
       }),

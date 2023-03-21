@@ -23,6 +23,7 @@ import { PatternMatchExpressionContext } from "./SmlParser";
 import { ExpressionListContext } from "./SmlParser";
 import { NilListContext } from "./SmlParser";
 import { VariableDeclarationContext } from "./SmlParser";
+import { LetrecDeclarationContext } from "./SmlParser";
 import { FunctionDeclarationContext } from "./SmlParser";
 import { LocalBlockDeclarationContext } from "./SmlParser";
 import { DeclarationStatementContext } from "./SmlParser";
@@ -31,6 +32,7 @@ import { StartContext } from "./SmlParser";
 import { StatementContext } from "./SmlParser";
 import { IdentifierTupleContext } from "./SmlParser";
 import { VariableContext } from "./SmlParser";
+import { LetrecContext } from "./SmlParser";
 import { FunctionContext } from "./SmlParser";
 import { DeclarationContext } from "./SmlParser";
 import { BinopContext } from "./SmlParser";
@@ -213,6 +215,14 @@ export interface SmlVisitor<Result> extends ParseTreeVisitor<Result> {
 	visitVariableDeclaration?: (ctx: VariableDeclarationContext) => Result;
 
 	/**
+	 * Visit a parse tree produced by the `letrecDeclaration`
+	 * labeled alternative in `SmlParser.declaration`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitLetrecDeclaration?: (ctx: LetrecDeclarationContext) => Result;
+
+	/**
 	 * Visit a parse tree produced by the `functionDeclaration`
 	 * labeled alternative in `SmlParser.declaration`.
 	 * @param ctx the parse tree
@@ -271,6 +281,13 @@ export interface SmlVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitVariable?: (ctx: VariableContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by `SmlParser.letrec`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitLetrec?: (ctx: LetrecContext) => Result;
 
 	/**
 	 * Visit a parse tree produced by `SmlParser.function`.

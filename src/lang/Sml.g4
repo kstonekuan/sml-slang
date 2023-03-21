@@ -84,6 +84,8 @@ identifierTuple:
 
 variable: VAL name = IDENTIFIER ASSIGN value = expression;
 
+letrec: VAL REC name = IDENTIFIER ASSIGN value = expression;
+
 function:
 	FUN name = IDENTIFIER '(' first = IDENTIFIER (
 		COMMA rest += IDENTIFIER
@@ -91,6 +93,7 @@ function:
 
 declaration:
 	body = variable		# variableDeclaration
+	| body = letrec		# letrecDeclaration
 	| body = function	# functionDeclaration
 	| LOCAL (declarations += declaration)+ IN (
 		body += declaration
