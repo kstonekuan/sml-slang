@@ -325,9 +325,10 @@ class ExpressionGenerator implements SmlVisitor<any> {
     }
   }
   visitLetBlockExpression(ctx: LetBlockExpressionContext): any {
+    const elems = ctx._declarations.map(element => this.visit(element))
     return {
       tag: 'let',
-      declarations: ctx._declarations.map(declaration => this.visit(declaration)),
+      declarations: elems,
       expr: this.visit(ctx._body),
     }
   }

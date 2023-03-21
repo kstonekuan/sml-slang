@@ -104,10 +104,13 @@ const microcode = {
       push(A, { tag: 'arr_lit_i', arity: cmd.elems.length }, ...cmd.elems),
   arr_assmt:
     cmd =>
-      push(A, { 'tag': 'arr_assmt_i' }, cmd.expr, cmd.ind, cmd.arr),
+      push(A, { tag: 'arr_assmt_i' }, cmd.expr, cmd.ind, cmd.arr),
   tuple:
     cmd =>
       push(A, { tag: 'tuple_i', arity: cmd.elems.length }, ...cmd.elems),
+  let:
+    cmd =>
+      push(A, { tag: 'let_i', locals: cmd.declarations, expr: cmd.expr }),
 
   //
   // statements
@@ -235,6 +238,21 @@ const microcode = {
       const array = S.slice(- arity - 1, S.length)
       S = S.slice(0, - arity)
       push(S, { tuple: array })
+    },
+  let_i:
+    cmd => {
+      const locals = []
+      for (let i = 0; i < cmd.locals.length; i++) // scan for local declarations
+        locals.unshift(scan(cmd.locals[i]))
+      const unassigneds = locals.map(_ => unassigned)
+      if (!(A.length === 0))
+        push(A, { tag: 'env_i', env: E })   // restore current env after expr
+      push(A, cmd.expr)                     // expression
+      for (let i = cmd.locals.length - 1; i >= 0; i--) { // run local declarations
+        push(A, { tag: 'pop_i' })             // pop result of declaration which is undeclared. 
+        push(A, cmd.locals[i])
+      }
+      E = extend(locals, unassigneds, E)
     },
 }
 
