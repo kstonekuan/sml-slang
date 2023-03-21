@@ -16,6 +16,9 @@ fun f (x) = if (x == 0) then (x) else (x + f(x-1))
 val rec f = fn (x) => if (x == 0) then (x) else (x + f(x-1))
 f(5)
 
+val rec f = fn (x, acc) => if (x == 0) then (acc) else (f(x-1, acc+x))
+f(5,0)
+
 val a = 1
 case a of 0 => "ze" + "ro"
 | 1 => "o" + "ne"

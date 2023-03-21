@@ -92,7 +92,7 @@ const microcode = {
       push(A, { tag: 'assmt_i', sym: cmd.sym }, cmd.expr),
   lam:
     cmd =>
-      push(S, { tag: 'closure', prms: cmd.prms, body: cmd.body, env: E, rec: cmd.rec }),
+      push(S, { tag: 'closure', prms: cmd.prms, body: cmd.body, env: extend(['rec'], [cmd.rec], E) }),
   arr_acc:
     cmd =>
       push(A, { tag: 'arr_acc_i' }, cmd.ind, cmd.arr),
@@ -210,7 +210,7 @@ const microcode = {
         push(A, { tag: 'env_i', env: E })
       }
       push(A, sf.body)
-      E = extend([...sf.prms, 'rec'], [...args, sf.rec], sf.env)
+      E = extend(sf.prms, args, sf.env)
     },
   branch_i:
     cmd =>
@@ -302,7 +302,10 @@ function* leave(context: Context) {
   yield context
 }
 export function* evaluate(node: any, context: Context) {
+  const start = Date.now()
   const result = execute(node.body[0])
+  const end = Date.now()
+  display("execute time: " + (end - start) + " ms")
   yield* leave(context)
   return result
 }
