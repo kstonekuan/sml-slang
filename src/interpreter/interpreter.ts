@@ -242,12 +242,13 @@ const microcode = {
   let_i:
     cmd => {
       const locals = []
-      for (let i = 0; i < cmd.locals.length; i++) // scan for local declarations
-        locals.unshift(scan(cmd.locals[i]))
+      // Unpacking and scanning for declarations we have parsed as an array
+      for (let i = 0; i < cmd.locals.length; i++) 
+        locals.unshift(scan(cmd.locals[i]))       
       const unassigneds = locals.map(_ => unassigned)
       if (!(A.length === 0))
-        push(A, { tag: 'env_i', env: E })   // restore current env after expr
-      push(A, cmd.expr)                     // expression
+        push(A, { tag: 'env_i', env: E })   // restore current env after let block
+      push(A, cmd.expr)                     // expression in let block after 'in' keyword
       for (let i = cmd.locals.length - 1; i >= 0; i--) { // run local declarations
         push(A, { tag: 'pop_i' })             // pop result of declaration which is undeclared. 
         push(A, cmd.locals[i])
