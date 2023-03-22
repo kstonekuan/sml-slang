@@ -1,4 +1,6 @@
-import { error, head, is_null, pair, tail } from 'sicp';
+import { arity, error, head, is_null, pair, tail } from 'sicp';
+
+import { builtin_mapping } from './utils'
 
 /* ************
  * environments
@@ -8,12 +10,12 @@ import { error, head, is_null, pair, tail } from 'sicp';
 const global_frame: any = {}
 
 // // fill global frame with built-in objects
-// for (const key in builtin_mapping)
-//     global_frame[key] = {
-//         tag: 'builtin',
-//         sym: key,
-//         arity: arity(builtin_mapping[key])
-//     }
+for (const key in builtin_mapping)
+    global_frame[key] = {
+        tag: 'builtin',
+        sym: key,
+        arity: arity(builtin_mapping[key])
+    }
 // fill global frame with built-in constants
 global_frame.undefined = undefined
 global_frame.rec = true // allow any type of function to be called from the top-level

@@ -51,7 +51,7 @@ const unop_microcode = {
 
 export const apply_unop = (op, v) => unop_microcode[op](v)
 
-const builtin_mapping = {
+export const builtin_mapping = {
     display: display,
     //     get_time: get_time,
     // stringify: stringify,
