@@ -1,10 +1,10 @@
 /* tslint:disable:max-classes-per-file */
-import { display, error, stringify } from 'sicp'
+import { display, error, head, pair, stringify, tail } from 'sicp'
 
 import { Context } from '../types'
 import { command_to_string, debug } from './debug'
 import { assign, extend, global_environment, handle_sequence, lookup, scan, unassigned } from './environment'
-import { apply_binop, apply_builtin, apply_unop, peek, push } from './utils'
+import { apply_binop, apply_builtin, apply_unop, peek, push, value_to_string } from './utils'
 
 /* **************************
  * interpreter configurations
@@ -235,9 +235,12 @@ const microcode = {
   arr_lit_i:
     cmd => {
       const arity = cmd.arity
-      const array = S.slice(- arity - 1, S.length)
-      S = S.slice(0, - arity)
-      push(S, array)
+      let list = null
+      for (let i = 0; i < arity; i++) {
+        const val = S.pop()
+        list = pair(val, list)
+      }
+      push(S, { tag: 'list', body: list })
     },
   arr_assmt_i:
     cmd => {
@@ -313,7 +316,7 @@ export function execute(program: any) {
   if (S.length > 1 || S.length < 1) {
     display(S, 'internal error: stash must be singleton but is: ')
   }
-  return display(S[0])
+  return display(value_to_string(S[0]))
 
 }
 
