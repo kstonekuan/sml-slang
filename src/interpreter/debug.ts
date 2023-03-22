@@ -1,29 +1,6 @@
 import { display, for_each, head, is_null, pair, stringify, tail } from 'sicp'
-/* *************************
- * values of the interpreter
- * *************************/
 
-// for numbers, strings, booleans, undefined, null
-// we use the value directly
-
-// closures aka function values
-const is_closure = x =>
-    x !== null &&
-    typeof x === "object" &&
-    x.tag === 'closure'
-
-const is_builtin = x =>
-    x !== null &&
-    typeof x === "object" &&
-    x.tag == 'builtin'
-
-// catching closure and builtins to get short displays
-const value_to_string = x =>
-    is_closure(x)
-        ? '<closure>'
-        : is_builtin(x)
-            ? '<builtin: ' + x.sym + '>'
-            : stringify(x)
+import { is_builtin, is_closure, is_list, list_to_arr, value_to_string } from './utils'
 
 /* *********
  * debugging

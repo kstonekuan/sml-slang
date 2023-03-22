@@ -1,4 +1,4 @@
-import { display, error, is_boolean, is_number, is_string } from 'sicp';
+import { display, error, head, is_boolean, is_null, is_number, is_string, pair, stringify, tail } from 'sicp';
 
 /* **********************
  * using arrays as stacks
@@ -135,3 +135,47 @@ const builtin_mapping = {
 
 export const apply_builtin = (builtin_symbol, args) =>
     builtin_mapping[builtin_symbol](...args)
+
+/* *************************
+ * values of the interpreter
+ * *************************/
+
+// for numbers, strings, booleans, undefined, null
+// we use the value directly
+
+// closures aka function values
+export const is_closure = x =>
+    x !== null &&
+    typeof x === "object" &&
+    x.tag === 'closure'
+
+export const is_builtin = x =>
+    x !== null &&
+    typeof x === "object" &&
+    x.tag == 'builtin'
+
+export const is_list = x =>
+    x !== null &&
+    typeof x === "object" &&
+    x.tag == 'list'
+
+export const list_to_arr = x =>
+    is_null(x) ? [] : [head(x), ...list_to_arr(tail(x))]
+
+export function arr_to_list(arr: any[]) {
+    let list = null
+    for (let i = 0; i < arr.length; i++) {
+        list = pair(arr[i], list)
+    }
+    return list
+}
+
+// catching closure and builtins to get short displays
+export const value_to_string = x =>
+    is_closure(x)
+        ? '<closure>'
+        : is_builtin(x)
+            ? '<builtin: ' + x.sym + '>'
+            : is_list(x)
+                ? stringify(list_to_arr(x.body))
+                : stringify(x)
