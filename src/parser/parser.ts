@@ -199,7 +199,6 @@ class ExpressionGenerator implements SmlVisitor<any> {
       tag: 'letrec',
       sym: ctx._name.text,
       expr: this.visit(ctx._value),
-      loc: contextToLocation(ctx)
     }
   }
   visitFunctionDeclaration(ctx: FunctionDeclarationContext): any {
