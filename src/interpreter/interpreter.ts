@@ -45,7 +45,7 @@ let S: any[]
 // See *environments* above. Execution initializes 
 // environment E as the global environment.
 
-let E: any[]
+let E: pair
 
 // tslint:disable:object-literal-shorthand
 // prettier-ignore
@@ -135,18 +135,14 @@ const microcode = {
       if (cmd.expr.tag === 'lam') {
         cmd.expr.rec = false
       }
-      push(A, { tag: 'lit', val: undefined },
-        { tag: 'pop_i' },
-        { tag: 'assmt', sym: cmd.sym, expr: cmd.expr })
+      push(A, { tag: 'assmt', sym: cmd.sym, expr: cmd.expr })
     },
   letrec:
     cmd => {
       if (cmd.expr.tag === 'lam') {
         cmd.expr.rec = true
       }
-      push(A, { tag: 'lit', val: undefined },
-        { tag: 'pop_i' },
-        { tag: 'assmt', sym: cmd.sym, expr: cmd.expr })
+      push(A, { tag: 'assmt', sym: cmd.sym, expr: cmd.expr })
     },
   fun:
     cmd =>
@@ -175,7 +171,7 @@ const microcode = {
           return
         }
       }
-      push(S, undefined)
+      push(S, undefined) // TODO: should not be able to have undefined, throw error if there is no wildcard or variable pattern
     },
   assmt_i:
     // peek top of stash without popping:
@@ -254,23 +250,23 @@ const microcode = {
     cmd => {
       // Unpacking and scanning for declarations we have parsed as an array
       const locals = []
-      for (let i = 0; i < cmd.locals.length; i++) 
-        locals.unshift(scan(cmd.locals[i]))      
+      for (let i = 0; i < cmd.locals.length; i++)
+        locals.unshift(scan(cmd.locals[i]))
       const globals = []
       for (let i = 0; i < cmd.globals.length; i++)
         globals.unshift(scan(cmd.globals[i]))
 
       const unassigned_locals = locals.map(_ => unassigned)
       const unassigned_globals = globals.map(_ => unassigned)
-      
+
       // Let globals be declared in the enclosing frame of locals, and it will be used in the program thereafter
       E = extend(globals, unassigned_globals, E)
 
       if (!(A.length === 0))
         push(A, { tag: 'env_i', env: E })   // restore to the frame which contains the global declarations
- 
+
       // Let global declarations be at the bottom of the Agenda so that we run them after local declarations
-      for (let i = cmd.globals.length - 1; i >= 0; i--) { 
+      for (let i = cmd.globals.length - 1; i >= 0; i--) {
         push(A, { tag: 'pop_i' })             // pop result of declaration which is undeclared. 
         push(A, cmd.globals[i])
       }
@@ -301,20 +297,20 @@ export function execute(program: any) {
       try {
         microcode[cmd.tag](cmd)
       } catch (e) {
-        return display(e, "error in microcode: ")
+        return display(e, "[Runtime Error] in microcode: ")
       }
       debug(cmd, A, S, E)
     } else {
-      return display("", "unknown command: " +
+      return display("", "[Runtime Error] unknown command: " +
         command_to_string(cmd))
     }
     i++
   }
   if (i === step_limit) {
-    display("step limit " + stringify(step_limit) + " exceeded")
+    display("[Runtime Error] step limit " + stringify(step_limit) + " exceeded")
   }
   if (S.length > 1 || S.length < 1) {
-    display(S, 'internal error: stash must be singleton but is: ')
+    display(S, '[Runtime Error] stash must be singleton but is: ')
   }
   return display(value_to_string(S[0]))
 
