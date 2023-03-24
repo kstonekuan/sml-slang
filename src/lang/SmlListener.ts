@@ -19,6 +19,9 @@ import { BinaryOperatorExpressionContext } from "./SmlParser";
 import { UnaryOperatorExpressionContext } from "./SmlParser";
 import { LetBlockExpressionContext } from "./SmlParser";
 import { PatternMatchExpressionContext } from "./SmlParser";
+import { IntUnopContext } from "./SmlParser";
+import { RealUnopContext } from "./SmlParser";
+import { BoolUnopContext } from "./SmlParser";
 import { ExpressionListContext } from "./SmlParser";
 import { NilListContext } from "./SmlParser";
 import { VariableDeclarationContext } from "./SmlParser";
@@ -27,6 +30,13 @@ import { FunctionDeclarationContext } from "./SmlParser";
 import { LocalBlockDeclarationContext } from "./SmlParser";
 import { DeclarationStatementContext } from "./SmlParser";
 import { ExpressionStatementContext } from "./SmlParser";
+import { CompareBinopContext } from "./SmlParser";
+import { IntBinopContext } from "./SmlParser";
+import { RealBinopContext } from "./SmlParser";
+import { StringBinopContext } from "./SmlParser";
+import { BoolBinopContext } from "./SmlParser";
+import { ListConstructBinopContext } from "./SmlParser";
+import { ListConcatBinopContext } from "./SmlParser";
 import { StartContext } from "./SmlParser";
 import { StatementContext } from "./SmlParser";
 import { VariableContext } from "./SmlParser";
@@ -258,6 +268,45 @@ export interface SmlListener extends ParseTreeListener {
 	exitPatternMatchExpression?: (ctx: PatternMatchExpressionContext) => void;
 
 	/**
+	 * Enter a parse tree produced by the `intUnop`
+	 * labeled alternative in `SmlParser.unop`.
+	 * @param ctx the parse tree
+	 */
+	enterIntUnop?: (ctx: IntUnopContext) => void;
+	/**
+	 * Exit a parse tree produced by the `intUnop`
+	 * labeled alternative in `SmlParser.unop`.
+	 * @param ctx the parse tree
+	 */
+	exitIntUnop?: (ctx: IntUnopContext) => void;
+
+	/**
+	 * Enter a parse tree produced by the `realUnop`
+	 * labeled alternative in `SmlParser.unop`.
+	 * @param ctx the parse tree
+	 */
+	enterRealUnop?: (ctx: RealUnopContext) => void;
+	/**
+	 * Exit a parse tree produced by the `realUnop`
+	 * labeled alternative in `SmlParser.unop`.
+	 * @param ctx the parse tree
+	 */
+	exitRealUnop?: (ctx: RealUnopContext) => void;
+
+	/**
+	 * Enter a parse tree produced by the `boolUnop`
+	 * labeled alternative in `SmlParser.unop`.
+	 * @param ctx the parse tree
+	 */
+	enterBoolUnop?: (ctx: BoolUnopContext) => void;
+	/**
+	 * Exit a parse tree produced by the `boolUnop`
+	 * labeled alternative in `SmlParser.unop`.
+	 * @param ctx the parse tree
+	 */
+	exitBoolUnop?: (ctx: BoolUnopContext) => void;
+
+	/**
 	 * Enter a parse tree produced by the `expressionList`
 	 * labeled alternative in `SmlParser.list`.
 	 * @param ctx the parse tree
@@ -360,6 +409,97 @@ export interface SmlListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitExpressionStatement?: (ctx: ExpressionStatementContext) => void;
+
+	/**
+	 * Enter a parse tree produced by the `compareBinop`
+	 * labeled alternative in `SmlParser.binop`.
+	 * @param ctx the parse tree
+	 */
+	enterCompareBinop?: (ctx: CompareBinopContext) => void;
+	/**
+	 * Exit a parse tree produced by the `compareBinop`
+	 * labeled alternative in `SmlParser.binop`.
+	 * @param ctx the parse tree
+	 */
+	exitCompareBinop?: (ctx: CompareBinopContext) => void;
+
+	/**
+	 * Enter a parse tree produced by the `intBinop`
+	 * labeled alternative in `SmlParser.binop`.
+	 * @param ctx the parse tree
+	 */
+	enterIntBinop?: (ctx: IntBinopContext) => void;
+	/**
+	 * Exit a parse tree produced by the `intBinop`
+	 * labeled alternative in `SmlParser.binop`.
+	 * @param ctx the parse tree
+	 */
+	exitIntBinop?: (ctx: IntBinopContext) => void;
+
+	/**
+	 * Enter a parse tree produced by the `realBinop`
+	 * labeled alternative in `SmlParser.binop`.
+	 * @param ctx the parse tree
+	 */
+	enterRealBinop?: (ctx: RealBinopContext) => void;
+	/**
+	 * Exit a parse tree produced by the `realBinop`
+	 * labeled alternative in `SmlParser.binop`.
+	 * @param ctx the parse tree
+	 */
+	exitRealBinop?: (ctx: RealBinopContext) => void;
+
+	/**
+	 * Enter a parse tree produced by the `stringBinop`
+	 * labeled alternative in `SmlParser.binop`.
+	 * @param ctx the parse tree
+	 */
+	enterStringBinop?: (ctx: StringBinopContext) => void;
+	/**
+	 * Exit a parse tree produced by the `stringBinop`
+	 * labeled alternative in `SmlParser.binop`.
+	 * @param ctx the parse tree
+	 */
+	exitStringBinop?: (ctx: StringBinopContext) => void;
+
+	/**
+	 * Enter a parse tree produced by the `boolBinop`
+	 * labeled alternative in `SmlParser.binop`.
+	 * @param ctx the parse tree
+	 */
+	enterBoolBinop?: (ctx: BoolBinopContext) => void;
+	/**
+	 * Exit a parse tree produced by the `boolBinop`
+	 * labeled alternative in `SmlParser.binop`.
+	 * @param ctx the parse tree
+	 */
+	exitBoolBinop?: (ctx: BoolBinopContext) => void;
+
+	/**
+	 * Enter a parse tree produced by the `listConstructBinop`
+	 * labeled alternative in `SmlParser.binop`.
+	 * @param ctx the parse tree
+	 */
+	enterListConstructBinop?: (ctx: ListConstructBinopContext) => void;
+	/**
+	 * Exit a parse tree produced by the `listConstructBinop`
+	 * labeled alternative in `SmlParser.binop`.
+	 * @param ctx the parse tree
+	 */
+	exitListConstructBinop?: (ctx: ListConstructBinopContext) => void;
+
+	/**
+	 * Enter a parse tree produced by the `listConcatBinop`
+	 * labeled alternative in `SmlParser.binop`.
+	 * @param ctx the parse tree
+	 */
+	enterListConcatBinop?: (ctx: ListConcatBinopContext) => void;
+	/**
+	 * Exit a parse tree produced by the `listConcatBinop`
+	 * labeled alternative in `SmlParser.binop`.
+	 * @param ctx the parse tree
+	 */
+	exitListConcatBinop?: (ctx: ListConcatBinopContext) => void;
 
 	/**
 	 * Enter a parse tree produced by `SmlParser.start`.

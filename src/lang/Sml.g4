@@ -45,20 +45,28 @@ GREATER: '>';
 GREATER_OR_EQUALS: '>=';
 
 // Unary operators
-NEGATE: '~';
+INT_NEGATE: '~';
+REAL_NEGATE: '~.';
+NOT: 'not';
 
 // Binary operators
-POW: '^';
-MUL: '*';
-DIV: '/';
-ADD: '+';
-SUB: '-';
+INT_MUL: '*';
+INT_DIV: 'div';
+INT_ADD: '+';
+INT_SUB: '-';
+REAL_MUL: '*.';
+REAL_DIV: '/';
+REAL_ADD: '+.';
+REAL_SUB: '-.';
+STRING_CONCAT: '^';
+AND: 'andalso';
+OR: 'orelse';
 
 INT: [0-9]+;
 REAL: INT+ DOT INT+;
 BOOL: 'true' | 'false';
 UNIT: '()';
-CHAR: '"' ~["] '"';
+CHAR: '#"' ~["] '"';
 STRING: '"' ~["]* '"';
 
 // list are linked list that starts from head to tail
@@ -99,23 +107,27 @@ declaration:
 	)+ END # localBlockDeclaration;
 
 binop:
-	EQUALS
-	| NOT_EQUALS
-	| LESS
-	| LESS_OR_EQUALS
-	| GREATER
-	| GREATER_OR_EQUALS
-	| POW
-	| MUL
-	| DIV
-	| ADD
-	| SUB
-	| LIST_CONSTRUCT
-	| LIST_CONCAT;
+	(
+		EQUALS
+		| NOT_EQUALS
+		| LESS
+		| LESS_OR_EQUALS
+		| GREATER
+		| GREATER_OR_EQUALS
+	)												# compareBinop
+	| (INT_MUL | INT_ADD | INT_SUB | INT_DIV)		# intBinop
+	| (REAL_MUL | REAL_ADD | REAL_SUB | REAL_DIV)	# realBinop
+	| STRING_CONCAT									# stringBinop
+	| (AND | OR)									# boolBinop
+	| LIST_CONSTRUCT								# listConstructBinop
+	| LIST_CONCAT									# listConcatBinop;
 // LIST_CONCAT, left and right expressions have to be a list LIST_CONSTRUCT go from right to left,
 // and rightmost has to be a list
 
-unop: NEGATE;
+unop:
+	INT_NEGATE		# intUnop
+	| REAL_NEGATE	# realUnop
+	| NOT			# boolUnop;
 
 list:
 	L_BRACKET first = expression (COMMA rest += expression)* R_BRACKET	# expressionList

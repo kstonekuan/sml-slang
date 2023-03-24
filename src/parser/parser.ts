@@ -4,8 +4,9 @@ import { ErrorNode } from 'antlr4ts/tree/ErrorNode'
 import { ParseTree } from 'antlr4ts/tree/ParseTree'
 import { RuleNode } from 'antlr4ts/tree/RuleNode'
 import { TerminalNode } from 'antlr4ts/tree/TerminalNode'
-import { display, is_null, is_undefined } from 'sicp'
+import { display, head, is_null, is_undefined, pair, tail } from 'sicp'
 
+import { assign, extend, lookup } from '../interpreter/environment'
 import { SmlLexer } from '../lang/SmlLexer'
 import { ApplyContext, BinopContext, BoolExpressionContext, CharExpressionContext, ExpressionListContext, IdentifierContext, IntExpressionContext, ListContext, NextPatternContext, NilListContext, RealExpressionContext, SmlParser, StringExpressionContext, UnitExpressionContext, UnopContext } from "../lang/SmlParser";
 import { IdentifierExpressionContext } from "../lang/SmlParser";
@@ -33,11 +34,22 @@ import { DeclarationContext } from "../lang/SmlParser";
 import { LambdaContext } from "../lang/SmlParser";
 import { ExpressionContext } from "../lang/SmlParser";
 import { ParenthesesContext } from '../lang/SmlParser'
+import { IntUnopContext } from "../lang/SmlParser";
+import { RealUnopContext } from "../lang/SmlParser";
+import { BoolUnopContext } from "../lang/SmlParser";
+import { CompareBinopContext } from "../lang/SmlParser";
+import { StringBinopContext } from "../lang/SmlParser";
+import { IntBinopContext } from "../lang/SmlParser";
+import { RealBinopContext } from "../lang/SmlParser";
+import { BoolBinopContext } from "../lang/SmlParser";
+import { ListConstructBinopContext } from "../lang/SmlParser";
+import { ListConcatBinopContext } from "../lang/SmlParser";
 import { SmlVisitor } from '../lang/SmlVisitor'
 import { Context, ErrorSeverity, ErrorType, SourceError } from '../types'
 import { declaration } from '../utils/astCreator'
 import { stripIndent } from '../utils/formatters'
 import { binaryOp } from '../utils/operators'
+import { LetterGenerator } from './utils'
 
 export class DisallowedConstructError implements SourceError {
   public type = ErrorType.SYNTAX
@@ -136,13 +148,56 @@ function contextToLocation(ctx: ExpressionContext): any {
     }
   }
 }
+
+const INT = 'int'
+const REAL = 'real'
+const STRING = 'string'
+const CHAR = 'char'
+const BOOL = 'bool'
+const LIST = 'list'
+const UNIT = 'unit'
 class ExpressionGenerator implements SmlVisitor<any> {
+  private E: pair // type environment
+  private letterGenerator: LetterGenerator
+
+  constructor() {
+    this.E = pair({}, null)
+    this.letterGenerator = new LetterGenerator()
+  }
+
+  freshType(): any {
+    return {
+      tag: `'${this.letterGenerator.generate()}`
+    }
+  }
+
+  recycleTypeVariable(typeVariable: any): void {
+    this.letterGenerator.recycle(typeVariable.tag.slice(1))
+  }
+
+  isTypeVariable(type: any): boolean {
+    return type.tag[0] === "'"
+  }
+
+  unifyConstraints(constraints: any[]): pair[] {
+    // TODO
+    return []
+  }
+
+  applySubstitution(type: any, substitution: pair): any {
+    // TODO
+    return type
+  }
 
   visitIntExpression(ctx: IntExpressionContext): any {
+    // env |- i : int -| {}
     return {
       tag: 'lit',
       val: parseInt(ctx.text),
-      type: 'int',
+      type: {
+        tag: INT,
+      },
+      constraints: [],
       // loc: contextToLocation(ctx)
     }
   }
@@ -150,55 +205,127 @@ class ExpressionGenerator implements SmlVisitor<any> {
     return {
       tag: 'lit',
       val: parseFloat(ctx.text),
-      type: 'real',
+      type: {
+        tag: REAL,
+      },
+      constraints: [],
     }
   }
   visitBoolExpression(ctx: BoolExpressionContext): any {
+    // env |- b : bool -| {}
     return {
       tag: 'lit',
       val: ctx.text === 'true',
-      type: 'bool',
+      type: {
+        tag: BOOL,
+      },
+      constraints: [],
     }
   }
   visitUnitExpression(ctx: UnitExpressionContext): any {
     return {
       tag: 'lit',
       val: ctx.text,
-      type: 'unit',
+      type: {
+        tag: UNIT,
+      },
+      constraints: [],
     }
   }
   visitCharExpression(ctx: CharExpressionContext): any {
     return {
       tag: 'lit',
       val: ctx.text.slice(1, -1),
-      type: 'char',
+      type: {
+        tag: CHAR,
+      },
+      constraints: [],
     }
   }
   visitStringExpression(ctx: StringExpressionContext): any {
     return {
       tag: 'lit',
       val: ctx.text.slice(1, -1),
-      type: 'string',
+      type: {
+        tag: STRING,
+      },
+      constraints: [],
+    }
+  }
+  visitIdentifier(ctx: IdentifierContext): any {
+    // env |- n : env(n) -| {}
+    const sym = ctx.text
+    return {
+      tag: 'nam',
+      sym: sym,
+      type: lookup(sym, this.E),
+      constraints: []
+    }
+  }
+  visitIdentifierExpression(ctx: IdentifierExpressionContext): any {
+    return this.visit(ctx._body)
+  }
+  visitExpressionList(ctx: ExpressionListContext): any {
+    const elems = ctx._rest.map(element => this.visit(element))
+    elems.unshift(this.visit(ctx._first))
+    elems.reverse()
+
+    const listType = elems[0].type
+
+    elems.forEach((elem, i) => {
+      if (elem.type.tag !== listType.tag) {
+        throw new Error(`List elements must be of the same type: at ${contextToLocation(ctx)}`)
+      }
+    })
+    return {
+      tag: 'arr_lit',
+      elems: elems,
+      type: {
+        tag: LIST,
+        elem: listType
+      },
+      constraints: []
+    }
+  }
+  visitNilList(ctx: NilListContext): any {
+    return {
+      tag: 'arr_lit',
+      elems: [],
+      type: {
+        tag: LIST,
+        elem: this.freshType()
+      },
+      constraints: []
     }
   }
   visitVariableDeclaration(ctx: VariableDeclarationContext): any {
     return this.visit(ctx._body)
   }
   visitVariable(ctx: VariableContext): any {
+    const expr = this.visit(ctx._value)
+    const sym = ctx._name.text
+    assign(sym, expr.type, this.E)
     return {
       tag: 'val',
-      sym: ctx._name.text,
-      expr: this.visit(ctx._value),
+      sym: sym,
+      expr: expr,
+      type: expr.type,
+      constraints: []
     }
   }
   visitLetrecDeclaration(ctx: LetrecDeclarationContext): any {
     return this.visit(ctx._body)
   }
   visitLetrec(ctx: LetrecContext): any {
+    const expr = this.visit(ctx._value)
+    const sym = ctx._name.text
+    assign(sym, expr.type, this.E)
     return {
       tag: 'letrec',
-      sym: ctx._name.text,
-      expr: this.visit(ctx._value),
+      sym: sym,
+      expr: expr,
+      type: expr.type,
+      constraints: []
     }
   }
   visitFunctionDeclaration(ctx: FunctionDeclarationContext): any {
@@ -206,44 +333,370 @@ class ExpressionGenerator implements SmlVisitor<any> {
     return this.visit(ctx._body)
   }
   visitFunction(ctx: FunctionContext): any {
+    // env |- fun x -> e : 't1 -> t2 -| C
+    //   if fresh 't1
+    //   and env, x : 't1 |- e : t2 -| C
     const prms = ctx._rest.map(element => element.text)
     prms.unshift(ctx._first.text)
+    const prmsTypes = prms.map(_ => this.freshType())
+    const originalEnv = this.E
+    this.E = extend(prms, prmsTypes, this.E)
+    const body = this.visit(ctx._body)
+
+    let type = {
+      tag: 'fn',
+      args: prmsTypes, // conceptually args is a tuple
+      res: body.type,
+    }
+    const constraints = body.constraints
+
+    const substitutions = this.unifyConstraints(constraints)
+    substitutions.forEach(sub => type = this.applySubstitution(type, sub))
+
+    this.E = originalEnv
+
+    const sym = ctx._name.text
+    assign(sym, type, this.E)
+
     return {
       tag: 'fun',
-      sym: ctx._name.text,
+      sym: sym,
       prms: prms,
-      body: this.visit(ctx._body),
+      body: body,
+      type: type,
+      constraints: constraints,
     }
   }
   visitApply(ctx: ApplyContext): any {
+    // env |- e1 e2 : 't -| C1, C2, t1 = t2 -> 't
+    //   if fresh 't
+    //   and env |- e1 : t1 -| C1
+    //   and env |- e2 : t2 -| C2
     const args = ctx._rest.map(element => this.visit(element))
     args.unshift(this.visit(ctx._first))
-    args.reverse()
+    const fun = this.visit(ctx._identifierApply)
+
+    let type = this.freshType()
+    const constraints = args.reduce((acc, arg) => [...acc, ...arg.constraints], [])
+    constraints.push(...fun.constraints)
+    constraints.push({
+      tag: 'eq',
+      frst: fun.type,
+      scnd: {
+        tag: 'fn',
+        args: args.map(arg => arg.type), // conceptually args is a tuple
+        res: type,
+      },
+    })
+
+    const substitutions = this.unifyConstraints(constraints)
+    substitutions.forEach(sub => type = this.applySubstitution(type, sub))
+
     return {
       tag: 'app',
-      fun: this.visit(ctx._identifierApply),    // TODO: struct
-      args: args,
+      fun: fun,    // TODO: struct
+      args: args.reverse,
+      type: type,
+      constraints: constraints,
     }
   }
   visitApplyExpression(ctx: ApplyExpressionContext): any {
     return this.visit(ctx._body)
   }
-  visitLocalBlockDeclaration(ctx: LocalBlockDeclarationContext): any {
-    return {
-      tag: 'local',
-      locals: ctx._declarations.map(declaration => this.visit(declaration)),
-      globals: ctx._body.map(declaration => this.visit(declaration)),
-    }
-  }
-  visitIdentifier(ctx: IdentifierContext): any {
-    return {
-      tag: 'nam',
-      sym: ctx.text,
-    }
-  }
-  visitIdentifierExpression(ctx: IdentifierExpressionContext): any {
+  visitLambdaExpression(ctx: LambdaExpressionContext): any {
     return this.visit(ctx._body)
   }
+  visitLambda(ctx: LambdaContext): any {
+    // env |- fun x -> e : 't1 -> t2 -| C
+    //   if fresh 't1
+    //   and env, x : 't1 |- e : t2 -| C
+    const prms = ctx._rest.map(element => element.text)
+    prms.unshift(ctx._first.text)
+    const prmsTypes = prms.map(_ => this.freshType())
+    const originalEnv = this.E
+    this.E = extend(prms, prmsTypes, this.E)
+    const body = this.visit(ctx._body)
+
+    let type = {
+      tag: 'fn',
+      args: prmsTypes, // conceptually args is a tuple
+      res: body.type,
+    }
+    const constraints = body.constraints
+
+    const substitutions = this.unifyConstraints(constraints)
+    substitutions.forEach(sub => type = this.applySubstitution(type, sub))
+
+    this.E = originalEnv
+
+    return {
+      tag: 'lam',
+      prms: prms,
+      body: body,
+      type: type,
+      constraints: constraints,
+    }
+  }
+  visitBinaryOperatorExpression(ctx: BinaryOperatorExpressionContext): any {
+    // env |- e1 e2 : 't -| C1, C2, t1 = t2 -> 't
+    //   if fresh 't
+    //   and env |- e1 : t1 -| C1
+    //   and env |- e2 : t2 -| C2
+    display(ctx._operator.text, "BinaryOperatorExpression -> _operator.text: ")
+    const operator = this.visit(ctx._operator)
+    const left = this.visit(ctx._left)
+    const right = this.visit(ctx._right)
+
+    let type = this.freshType()
+    const constraints = [...operator.constraints, ...left.constraints, ...right.constraints]
+    constraints.push({
+      tag: 'eq',
+      frst: operator.type,
+      scnd: {
+        tag: 'fn',
+        args: [left.type, right.type],
+        res: type,
+      },
+    })
+
+    const substitutions = this.unifyConstraints(constraints)
+    substitutions.forEach(sub => type = this.applySubstitution(type, sub))
+
+    return {
+      tag: 'binop',
+      sym: operator.sym,
+      frst: left,
+      scnd: right,
+      type: type,
+      constraints: constraints,
+    }
+  }
+  visitBinop?(ctx: BinopContext): any | undefined
+  visitIntBinop(ctx: IntBinopContext): any {
+    return {
+      sym: ctx.text,
+      type: {
+        tag: 'fn',
+        args: [{ tag: INT, }, { tag: INT, }],
+        res: { tag: INT, }
+      },
+      constraints: []
+    }
+  }
+  visitRealBinop(ctx: RealBinopContext): any {
+    return {
+      sym: ctx.text,
+      type: {
+        tag: 'fn',
+        args: [{ tag: REAL, }, { tag: REAL, }],
+        res: { tag: REAL, }
+      },
+      constraints: []
+    }
+  }
+  visitBoolBinop(ctx: BoolBinopContext): any {
+    return {
+      sym: ctx.text,
+      type: {
+        tag: 'fn',
+        args: [{ tag: BOOL, }, { tag: BOOL, }],
+        res: { tag: BOOL, }
+      },
+      constraints: []
+    }
+  }
+  visitStringBinop(ctx: StringBinopContext): any {
+    return {
+      sym: ctx.text,
+      type: {
+        tag: 'fn',
+        args: [{ tag: STRING, }, { tag: STRING, }],
+        res: { tag: STRING, }
+      },
+      constraints: []
+    }
+  }
+  visitListConcatBinop(ctx: ListConcatBinopContext): any {
+    const listType = this.freshType()
+    return {
+      sym: ctx.text,
+      type: {
+        tag: 'fn',
+        args: [{ tag: LIST, elem: listType }, { tag: LIST, elem: listType }],
+        res: { tag: LIST, elem: listType }
+      },
+      constraints: []
+    }
+  }
+  visitListConstructBinop(ctx: ListConstructBinopContext): any {
+    const listType = this.freshType()
+    return {
+      sym: ctx.text,
+      type: {
+        tag: 'fn',
+        args: [listType, { tag: LIST, elem: listType }],
+        res: { tag: LIST, elem: listType }
+      },
+      constraints: []
+    }
+  }
+  visitCompareBinop(ctx: CompareBinopContext): any {
+    const type = this.freshType()
+    return {
+      sym: ctx.text,
+      type: {
+        tag: 'fn',
+        args: [type, type],
+        res: BOOL,
+      },
+      constraints: []
+    }
+  }
+  visitUnaryOperatorExpression(ctx: UnaryOperatorExpressionContext): any {
+    // env |- e1 e2 : 't -| C1, C2, t1 = t2 -> 't
+    //   if fresh 't
+    //   and env |- e1 : t1 -| C1
+    //   and env |- e2 : t2 -| C2
+    const operator = this.visit(ctx._operator)
+    const expr = this.visit(ctx._expr)
+
+    let type = this.freshType()
+    const constraints = [...operator.constraints, ...expr.constraints]
+    constraints.push({
+      tag: 'eq',
+      frst: operator.type,
+      scnd: {
+        tag: 'fn',
+        args: [expr.type],
+        res: type,
+      },
+    })
+
+    const substitutions = this.unifyConstraints(constraints)
+    substitutions.forEach(sub => type = this.applySubstitution(type, sub))
+
+    return {
+      tag: 'unop',
+      sym: operator.sym,
+      frst: expr,
+      type: type,
+      constraints: constraints,
+    }
+  }
+  visitUnop?(ctx: UnopContext): any | undefined
+  visitIntUnop(ctx: IntUnopContext): any {
+    return {
+      sym: ctx.text,
+      type: {
+        tag: 'fn',
+        args: [INT],
+        res: INT,
+      },
+      constraints: []
+    }
+  }
+  visitRealUnop(ctx: RealUnopContext): any {
+    return {
+      sym: ctx.text,
+      type: {
+        tag: 'fn',
+        args: [REAL],
+        res: REAL,
+      },
+      constraints: []
+    }
+  }
+  visitBoolUnop(ctx: BoolUnopContext): any {
+    return {
+      sym: ctx.text,
+      type: {
+        tag: 'fn',
+        args: [BOOL],
+        res: BOOL,
+      },
+      constraints: []
+    }
+  }
+  visitListExpression(ctx: ListExpressionContext): any {
+    return this.visit(ctx._body)
+  }
+  visitList?(ctx: ListContext): any | undefined
+  visitConditionalExpression(ctx: ConditionalExpressionContext): any {
+    // env |- if e1 then e2 else e3 : 't -| C1, C2, C3, t1 = bool, 't = t2, 't = t3
+    //   if fresh 't
+    //   and env |- e1 : t1 -| C1
+    //   and env |- e2 : t2 -| C2
+    //   and env |- e3 : t3 -| C3
+    const pred = this.visit(ctx._predicate)
+    const cons = this.visit(ctx._consequent)
+    const alt = this.visit(ctx._alternative)
+
+    let type = this.freshType()
+    const constraints = [...pred.constraints, ...cons.constraints, ...alt.constraints]
+    constraints.push({ tag: 'eq', frst: pred.type, scnd: { tag: BOOL } })
+    constraints.push({ tag: 'eq', frst: type, scnd: cons.type })
+    constraints.push({ tag: 'eq', frst: type, scnd: alt.type })
+
+    const substitutions = this.unifyConstraints(constraints)
+    substitutions.forEach(sub => type = this.applySubstitution(type, sub))
+
+    return {
+      tag: 'cond_expr',
+      pred: pred,
+      cons: cons,
+      alt: alt,
+      type: type,
+      constraints: constraints,
+    }
+  }
+  visitLetBlockExpression(ctx: LetBlockExpressionContext): any {
+    const elems = ctx._declarations.map(element => this.visit(element))
+    const expr = this.visit(ctx._body)
+    return {
+      tag: 'let',
+      declarations: elems,
+      expr: expr,
+      // TODO
+      type: expr.type,
+      constraints: expr.constraints,
+    }
+  }
+  visitLocalBlockDeclaration(ctx: LocalBlockDeclarationContext): any {
+    const locals = ctx._declarations.map(declaration => this.visit(declaration))
+    const globals = ctx._body.map(declaration => this.visit(declaration))
+    return {
+      tag: 'local',
+      locals: locals,
+      globals: globals,
+      // TODO
+      type: undefined,
+      constraints: [],
+    }
+  }
+  visitPatternMatchExpression(ctx: PatternMatchExpressionContext): any {
+    const pats = ctx._otherPatterns.map(pat => this.visit(pat))
+    pats.unshift({ tag: 'pat', case: this.visit(ctx._firstCase), result: this.visit(ctx._firstResult) })
+    return {
+      tag: 'pat_match',
+      val: this.visit(ctx._value),
+      cases: pats.map(pat => pat.case).reverse(),
+      results: pats.map(pat => pat.result),
+      // TODO
+      type: {
+        tag: 'fn',
+        args: [pats[0].case.type],
+        res: pats[0].result.type,
+      },
+      constraints: [],
+    }
+  }
+  visitNextPattern(ctx: NextPatternContext): any {
+    return {
+      case: this.visit(ctx._nextCase),
+      result: this.visit(ctx._nextResult),
+    }
+  }
+
   visitDeclarationStatement(ctx: DeclarationStatementContext): any {
     return this.visit(ctx._body)
   }
@@ -264,93 +717,6 @@ class ExpressionGenerator implements SmlVisitor<any> {
   visitParentheses(ctx: ParenthesesContext): any {
     return this.visit(ctx._inner)
   }
-  visitExpressionList(ctx: ExpressionListContext): any {
-    const elems = ctx._rest.map(element => this.visit(element))
-    elems.unshift(this.visit(ctx._first))
-    elems.reverse()
-    return {
-      tag: 'arr_lit',
-      elems: elems,
-    }
-  }
-  visitNilList(ctx: NilListContext): any {
-    return {
-      tag: 'arr_lit',
-      elems: [],
-    }
-  }
-  visitLambdaExpression(ctx: LambdaExpressionContext): any {
-    return this.visit(ctx._body)
-  }
-  visitLambda(ctx: LambdaContext): any {
-    const prms = ctx._rest.map(element => element.text)
-    prms.unshift(ctx._first.text)
-    return {
-      tag: 'lam',
-      prms: prms,
-      body: this.visit(ctx._body),
-    }
-  }
-  visitBinaryOperatorExpression(ctx: BinaryOperatorExpressionContext): any {
-    display(ctx._operator.text, "BinaryOperatorExpression -> _operator.text: ")
-    return {
-      tag: 'binop',
-      sym: this.visit(ctx._operator),
-      frst: this.visit(ctx._left),
-      scnd: this.visit(ctx._right),
-    }
-  }
-  visitBinop(ctx: BinopContext): any {
-    return ctx.text
-  }
-  visitUnaryOperatorExpression(ctx: UnaryOperatorExpressionContext): any {
-    return {
-      tag: 'unop',
-      sym: this.visit(ctx._operator),
-      frst: this.visit(ctx._expr),
-    }
-  }
-  visitUnop(ctx: UnopContext): any {
-    return ctx.text
-  }
-  visitListExpression(ctx: ListExpressionContext): any {
-    return this.visit(ctx._body)
-  }
-  visitList?(ctx: ListContext): any | undefined
-  visitConditionalExpression(ctx: ConditionalExpressionContext): any {
-    return {
-      tag: 'cond_expr',
-      pred: this.visit(ctx._predicate),
-      cons: this.visit(ctx._consequent),
-      alt: this.visit(ctx._alternative),
-    }
-  }
-  visitLetBlockExpression(ctx: LetBlockExpressionContext): any {
-    const elems = ctx._declarations.map(element => this.visit(element))
-    return {
-      tag: 'let',
-      declarations: elems,
-      expr: this.visit(ctx._body),
-    }
-  }
-  visitPatternMatchExpression(ctx: PatternMatchExpressionContext): any {
-    const pats = ctx._otherPatterns.map(pat => this.visit(pat))
-    pats.unshift({ tag: 'pat', case: this.visit(ctx._firstCase), result: this.visit(ctx._firstResult) })
-    return {
-      tag: 'pat_match',
-      val: this.visit(ctx._value),
-      cases: pats.map(pat => pat.case).reverse(),
-      results: pats.map(pat => pat.result),
-    }
-  }
-  visitNextPattern(ctx: NextPatternContext): any {
-    return {
-      case: this.visit(ctx._nextCase),
-      result: this.visit(ctx._nextResult),
-    }
-  }
-
-
 
   // visitType(ctx: TypeContext): any {      // TODO: Check if this is correct
   //   return {
@@ -481,7 +847,7 @@ export function parse(source: string, context: Context) {
     if (error instanceof FatalSyntaxError) {
       context.errors.push(error)
     } else {
-      display(error)
+      display(error, "[Parsing Error] ")
     }
   }
   const hasErrors = context.errors.find(m => m.severity === ErrorSeverity.ERROR)

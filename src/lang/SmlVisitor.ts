@@ -19,6 +19,9 @@ import { BinaryOperatorExpressionContext } from "./SmlParser";
 import { UnaryOperatorExpressionContext } from "./SmlParser";
 import { LetBlockExpressionContext } from "./SmlParser";
 import { PatternMatchExpressionContext } from "./SmlParser";
+import { IntUnopContext } from "./SmlParser";
+import { RealUnopContext } from "./SmlParser";
+import { BoolUnopContext } from "./SmlParser";
 import { ExpressionListContext } from "./SmlParser";
 import { NilListContext } from "./SmlParser";
 import { VariableDeclarationContext } from "./SmlParser";
@@ -27,6 +30,13 @@ import { FunctionDeclarationContext } from "./SmlParser";
 import { LocalBlockDeclarationContext } from "./SmlParser";
 import { DeclarationStatementContext } from "./SmlParser";
 import { ExpressionStatementContext } from "./SmlParser";
+import { CompareBinopContext } from "./SmlParser";
+import { IntBinopContext } from "./SmlParser";
+import { RealBinopContext } from "./SmlParser";
+import { StringBinopContext } from "./SmlParser";
+import { BoolBinopContext } from "./SmlParser";
+import { ListConstructBinopContext } from "./SmlParser";
+import { ListConcatBinopContext } from "./SmlParser";
 import { StartContext } from "./SmlParser";
 import { StatementContext } from "./SmlParser";
 import { VariableContext } from "./SmlParser";
@@ -181,6 +191,30 @@ export interface SmlVisitor<Result> extends ParseTreeVisitor<Result> {
 	visitPatternMatchExpression?: (ctx: PatternMatchExpressionContext) => Result;
 
 	/**
+	 * Visit a parse tree produced by the `intUnop`
+	 * labeled alternative in `SmlParser.unop`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitIntUnop?: (ctx: IntUnopContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by the `realUnop`
+	 * labeled alternative in `SmlParser.unop`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitRealUnop?: (ctx: RealUnopContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by the `boolUnop`
+	 * labeled alternative in `SmlParser.unop`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitBoolUnop?: (ctx: BoolUnopContext) => Result;
+
+	/**
 	 * Visit a parse tree produced by the `expressionList`
 	 * labeled alternative in `SmlParser.list`.
 	 * @param ctx the parse tree
@@ -243,6 +277,62 @@ export interface SmlVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitExpressionStatement?: (ctx: ExpressionStatementContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by the `compareBinop`
+	 * labeled alternative in `SmlParser.binop`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitCompareBinop?: (ctx: CompareBinopContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by the `intBinop`
+	 * labeled alternative in `SmlParser.binop`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitIntBinop?: (ctx: IntBinopContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by the `realBinop`
+	 * labeled alternative in `SmlParser.binop`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitRealBinop?: (ctx: RealBinopContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by the `stringBinop`
+	 * labeled alternative in `SmlParser.binop`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitStringBinop?: (ctx: StringBinopContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by the `boolBinop`
+	 * labeled alternative in `SmlParser.binop`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitBoolBinop?: (ctx: BoolBinopContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by the `listConstructBinop`
+	 * labeled alternative in `SmlParser.binop`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitListConstructBinop?: (ctx: ListConstructBinopContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by the `listConcatBinop`
+	 * labeled alternative in `SmlParser.binop`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitListConcatBinop?: (ctx: ListConcatBinopContext) => Result;
 
 	/**
 	 * Visit a parse tree produced by `SmlParser.start`.
