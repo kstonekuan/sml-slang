@@ -6,7 +6,7 @@ import { RuleNode } from 'antlr4ts/tree/RuleNode'
 import { TerminalNode } from 'antlr4ts/tree/TerminalNode'
 import { display, head, is_null, is_undefined, pair, tail } from 'sicp'
 
-import { assign, extend, lookup } from '../interpreter/environment'
+import { assign, extend, lookup, unassigned } from '../interpreter/environment'
 import { SmlLexer } from '../lang/SmlLexer'
 import { ApplyContext, BinopContext, BoolExpressionContext, CharExpressionContext, ExpressionListContext, IdentifierContext, IntExpressionContext, ListContext, NextPatternContext, NilListContext, RealExpressionContext, SmlParser, StringExpressionContext, UnitExpressionContext, UnopContext } from "../lang/SmlParser";
 import { IdentifierExpressionContext } from "../lang/SmlParser";
@@ -156,6 +156,7 @@ const CHAR = 'char'
 const BOOL = 'bool'
 const LIST = 'list'
 const UNIT = 'unit'
+const UNASSIGNED = { tag: '_unassigned' }
 class ExpressionGenerator implements SmlVisitor<any> {
   private E: pair // type environment
   private letterGenerator: LetterGenerator
@@ -302,8 +303,9 @@ class ExpressionGenerator implements SmlVisitor<any> {
     return this.visit(ctx._body)
   }
   visitVariable(ctx: VariableContext): any {
-    const expr = this.visit(ctx._value)
     const sym = ctx._name.text
+    this.E = extend([sym], [unassigned], this.E)
+    const expr = this.visit(ctx._value)
     assign(sym, expr.type, this.E)
     return {
       tag: 'val',
@@ -317,8 +319,9 @@ class ExpressionGenerator implements SmlVisitor<any> {
     return this.visit(ctx._body)
   }
   visitLetrec(ctx: LetrecContext): any {
-    const expr = this.visit(ctx._value)
     const sym = ctx._name.text
+    this.E = extend([sym], [UNASSIGNED], this.E) // TODO fix recusrive funcs
+    const expr = this.visit(ctx._value)
     assign(sym, expr.type, this.E)
     return {
       tag: 'letrec',
@@ -336,11 +339,12 @@ class ExpressionGenerator implements SmlVisitor<any> {
     // env |- fun x -> e : 't1 -> t2 -| C
     //   if fresh 't1
     //   and env, x : 't1 |- e : t2 -| C
+    const sym = ctx._name.text
     const prms = ctx._rest.map(element => element.text)
     prms.unshift(ctx._first.text)
     const prmsTypes = prms.map(_ => this.freshType())
     const originalEnv = this.E
-    this.E = extend(prms, prmsTypes, this.E)
+    this.E = extend([...prms, sym], [...prmsTypes, UNASSIGNED], this.E) // TODO fix recusrive funcs
     const body = this.visit(ctx._body)
 
     let type = {
@@ -354,8 +358,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
     substitutions.forEach(sub => type = this.applySubstitution(type, sub))
 
     this.E = originalEnv
-
-    const sym = ctx._name.text
+    this.E = extend([sym], [unassigned], this.E)
     assign(sym, type, this.E)
 
     return {
@@ -395,7 +398,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
     return {
       tag: 'app',
       fun: fun,    // TODO: struct
-      args: args.reverse,
+      args: args.reverse(),
       type: type,
       constraints: constraints,
     }

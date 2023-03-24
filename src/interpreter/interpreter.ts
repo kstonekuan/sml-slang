@@ -107,7 +107,7 @@ const microcode = {
       push(A, { tag: 'arr_assmt_i' }, cmd.expr, cmd.ind, cmd.arr),
   let:
     cmd =>
-      push(A, { tag: 'blk', body: { tag: 'seq', stmts: [...cmd.locals, cmd.expr] } }),
+      push(A, { tag: 'blk', body: { tag: 'seq', stmts: [...cmd.declarations, cmd.expr] } }),
   local:
     cmd =>
       push(A, { tag: 'local_i', locals: cmd.locals, globals: cmd.globals }),
@@ -293,6 +293,7 @@ export function execute(program: any) {
   while (i < step_limit) {
     if (A.length === 0) break
     const cmd = A.pop()
+    display(cmd.tag, "executing command: ")
     if (microcode.hasOwnProperty(cmd.tag)) {
       try {
         microcode[cmd.tag](cmd)
