@@ -4,9 +4,10 @@ import { ErrorNode } from 'antlr4ts/tree/ErrorNode'
 import { ParseTree } from 'antlr4ts/tree/ParseTree'
 import { RuleNode } from 'antlr4ts/tree/RuleNode'
 import { TerminalNode } from 'antlr4ts/tree/TerminalNode'
-import { display, head, is_null, is_undefined, pair, tail } from 'sicp'
+import { display, head, is_null, is_undefined, pair, stringify, tail } from 'sicp'
 
-import { assign, extend, lookup, unassigned } from '../interpreter/environment'
+import { assign, extend, lookup } from '../interpreter/environment'
+import { unassigned } from '../interpreter/utils'
 import { SmlLexer } from '../lang/SmlLexer'
 import { ApplyContext, BinopContext, BoolExpressionContext, CharExpressionContext, ExpressionListContext, IdentifierContext, IntExpressionContext, ListContext, NextPatternContext, NilListContext, RealExpressionContext, SmlParser, StringExpressionContext, UnitExpressionContext, UnopContext } from "../lang/SmlParser";
 import { IdentifierExpressionContext } from "../lang/SmlParser";
@@ -154,9 +155,11 @@ const REAL = 'real'
 const STRING = 'string'
 const CHAR = 'char'
 const BOOL = 'bool'
-const LIST = 'list'
 const UNIT = 'unit'
-const UNASSIGNED = { tag: '_unassigned' }
+const PRIMS = [INT, REAL, STRING, CHAR, BOOL, UNIT]
+const LIST = 'list'
+const FN = 'fn'
+const EQ = 'eq'
 class ExpressionGenerator implements SmlVisitor<any> {
   private E: pair // type environment
   private letterGenerator: LetterGenerator
@@ -180,13 +183,97 @@ class ExpressionGenerator implements SmlVisitor<any> {
     return type.tag[0] === "'"
   }
 
+  isTypeVariableInType(typeVariable: any, type: any): boolean {
+    if (type.tag === typeVariable.tag) {
+      return true
+    }
+
+    if (type.tag === LIST) {
+      return this.isTypeVariableInType(typeVariable, type.type)
+    }
+
+    if (type.tag === FN) {
+      return type.args.reduce((acc, arg) => acc || this.isTypeVariableInType(typeVariable, arg), false) || this.isTypeVariableInType(typeVariable, type.ret)
+    }
+  }
+
   unifyConstraints(constraints: any[]): pair[] {
     // TODO
+    // display(constraints, "Unifying: ")
+
+    if (constraints.length === 0) {
+      return []
+    }
+
+    const [first, ...rest] = constraints
+
+    if (stringify(first.frst) === stringify(first.scnd)) {
+      return this.unifyConstraints(rest)
+    }
+
+    if (this.isTypeVariable(first.frst) && !this.isTypeVariableInType(first.frst, first.scnd)) {
+      const substitution = pair(first.scnd, first.frst)
+      this.recycleTypeVariable(first.frst)
+      return [substitution, ...this.unifyConstraints(rest.map(constraint => this.applySubstitution(constraint, substitution)))]
+    }
+
+    if (this.isTypeVariable(first.scnd) && !this.isTypeVariableInType(first.scnd, first.frst)) {
+      const substitution = pair(first.frst, first.scnd)
+      this.recycleTypeVariable(first.scnd)
+      return [substitution, ...this.unifyConstraints(rest.map(constraint => this.applySubstitution(constraint, substitution)))]
+    }
+
+    if (first.frst.tag === LIST && first.scnd.tag === LIST) {
+      return this.unifyConstraints([{ tag: EQ, frst: first.frst.type, scnd: first.scnd.type }, ...rest])
+    }
+
+    if (first.frst.tag === FN && first.scnd.tag === FN) {
+      if (first.frst.args.length !== first.scnd.args.length) {
+        throw new Error(`Function types in constraint ${stringify(first)} must have the same number of arguments`)
+      }
+      return this.unifyConstraints([
+        { tag: EQ, frst: first.frst.ret, scnd: first.scnd.ret },
+        ...first.frst.args.map((arg, i) => ({ tag: EQ, frst: arg, scnd: first.scnd.args[i] })),
+        ...rest
+      ])
+    }
+
+    if (PRIMS.includes(first.frst.tag) && (first.frst.tag !== first.scnd.tag)) {
+      throw new Error(`Types in constraint [${stringify(first)}] cannot be unified`)
+    }
+
     return []
   }
 
   applySubstitution(type: any, substitution: pair): any {
     // TODO
+    if (type.tag === EQ) {
+      return {
+        tag: EQ,
+        frst: this.applySubstitution(type.frst, substitution),
+        scnd: this.applySubstitution(type.scnd, substitution)
+      }
+    }
+
+    if (type.tag === LIST) {
+      return {
+        tag: LIST,
+        type: this.applySubstitution(type.type, substitution)
+      }
+    }
+
+    if (type.tag === FN) {
+      return {
+        tag: FN,
+        args: type.args.map(arg => this.applySubstitution(arg, substitution)),
+        ret: this.applySubstitution(type.ret, substitution)
+      }
+    }
+
+    if (type.tag === tail(substitution).tag) {
+      return head(substitution)
+    }
+
     return type
   }
 
@@ -236,7 +323,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
   visitCharExpression(ctx: CharExpressionContext): any {
     return {
       tag: 'lit',
-      val: ctx.text.slice(1, -1),
+      val: ctx.text.slice(2, -1),
       type: {
         tag: CHAR,
       },
@@ -273,9 +360,9 @@ class ExpressionGenerator implements SmlVisitor<any> {
 
     const listType = elems[0].type
 
-    elems.forEach((elem, i) => {
+    elems.forEach(elem => {
       if (elem.type.tag !== listType.tag) {
-        throw new Error(`List elements must be of the same type: at ${contextToLocation(ctx)}`)
+        throw new Error(`List elements must be of the same type: at ${stringify(contextToLocation(ctx))}`)
       }
     })
     return {
@@ -304,9 +391,11 @@ class ExpressionGenerator implements SmlVisitor<any> {
   }
   visitVariable(ctx: VariableContext): any {
     const sym = ctx._name.text
-    this.E = extend([sym], [unassigned], this.E)
     const expr = this.visit(ctx._value)
+
+    this.E = extend([sym], [unassigned], this.E)
     assign(sym, expr.type, this.E)
+
     return {
       tag: 'val',
       sym: sym,
@@ -320,14 +409,26 @@ class ExpressionGenerator implements SmlVisitor<any> {
   }
   visitLetrec(ctx: LetrecContext): any {
     const sym = ctx._name.text
-    this.E = extend([sym], [UNASSIGNED], this.E) // TODO fix recusrive funcs
+    let type = this.freshType()
+    const originalEnv = this.E
+    this.E = extend([sym], [type], this.E) // TODO fix recusrive funcs
     const expr = this.visit(ctx._value)
+
+    const constraints = expr.constraints
+    constraints.push({ tag: EQ, frst: type, scnd: expr.type })
+
+    const substitutions = this.unifyConstraints(constraints)
+    substitutions.forEach(sub => type = this.applySubstitution(type, sub))
+
+    this.E = originalEnv
+    this.E = extend([sym], [unassigned], this.E)
     assign(sym, expr.type, this.E)
+
     return {
       tag: 'letrec',
       sym: sym,
       expr: expr,
-      type: expr.type,
+      type: type,
       constraints: []
     }
   }
@@ -343,16 +444,21 @@ class ExpressionGenerator implements SmlVisitor<any> {
     const prms = ctx._rest.map(element => element.text)
     prms.unshift(ctx._first.text)
     const prmsTypes = prms.map(_ => this.freshType())
+    let type = this.freshType()
     const originalEnv = this.E
-    this.E = extend([...prms, sym], [...prmsTypes, UNASSIGNED], this.E) // TODO fix recusrive funcs
+    this.E = extend([...prms, sym], [...prmsTypes, type], this.E) // TODO fix recusrive funcs
     const body = this.visit(ctx._body)
 
-    let type = {
-      tag: 'fn',
-      args: prmsTypes, // conceptually args is a tuple
-      res: body.type,
-    }
     const constraints = body.constraints
+    constraints.push({
+      tag: EQ,
+      frst: type,
+      scnd: {
+        tag: FN,
+        args: prmsTypes, // conceptually args is a tuple
+        ret: body.type,
+      }
+    })
 
     const substitutions = this.unifyConstraints(constraints)
     substitutions.forEach(sub => type = this.applySubstitution(type, sub))
@@ -367,7 +473,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
       prms: prms,
       body: body,
       type: type,
-      constraints: constraints,
+      constraints: [],
     }
   }
   visitApply(ctx: ApplyContext): any {
@@ -383,12 +489,12 @@ class ExpressionGenerator implements SmlVisitor<any> {
     const constraints = args.reduce((acc, arg) => [...acc, ...arg.constraints], [])
     constraints.push(...fun.constraints)
     constraints.push({
-      tag: 'eq',
+      tag: EQ,
       frst: fun.type,
       scnd: {
-        tag: 'fn',
+        tag: FN,
         args: args.map(arg => arg.type), // conceptually args is a tuple
-        res: type,
+        ret: type,
       },
     })
 
@@ -421,9 +527,9 @@ class ExpressionGenerator implements SmlVisitor<any> {
     const body = this.visit(ctx._body)
 
     let type = {
-      tag: 'fn',
+      tag: FN,
       args: prmsTypes, // conceptually args is a tuple
-      res: body.type,
+      ret: body.type,
     }
     const constraints = body.constraints
 
@@ -453,12 +559,12 @@ class ExpressionGenerator implements SmlVisitor<any> {
     let type = this.freshType()
     const constraints = [...operator.constraints, ...left.constraints, ...right.constraints]
     constraints.push({
-      tag: 'eq',
+      tag: EQ,
       frst: operator.type,
       scnd: {
-        tag: 'fn',
+        tag: FN,
         args: [left.type, right.type],
-        res: type,
+        ret: type,
       },
     })
 
@@ -479,9 +585,9 @@ class ExpressionGenerator implements SmlVisitor<any> {
     return {
       sym: ctx.text,
       type: {
-        tag: 'fn',
+        tag: FN,
         args: [{ tag: INT, }, { tag: INT, }],
-        res: { tag: INT, }
+        ret: { tag: INT, }
       },
       constraints: []
     }
@@ -490,9 +596,9 @@ class ExpressionGenerator implements SmlVisitor<any> {
     return {
       sym: ctx.text,
       type: {
-        tag: 'fn',
+        tag: FN,
         args: [{ tag: REAL, }, { tag: REAL, }],
-        res: { tag: REAL, }
+        ret: { tag: REAL, }
       },
       constraints: []
     }
@@ -501,9 +607,9 @@ class ExpressionGenerator implements SmlVisitor<any> {
     return {
       sym: ctx.text,
       type: {
-        tag: 'fn',
+        tag: FN,
         args: [{ tag: BOOL, }, { tag: BOOL, }],
-        res: { tag: BOOL, }
+        ret: { tag: BOOL, }
       },
       constraints: []
     }
@@ -512,9 +618,9 @@ class ExpressionGenerator implements SmlVisitor<any> {
     return {
       sym: ctx.text,
       type: {
-        tag: 'fn',
+        tag: FN,
         args: [{ tag: STRING, }, { tag: STRING, }],
-        res: { tag: STRING, }
+        ret: { tag: STRING, }
       },
       constraints: []
     }
@@ -524,9 +630,9 @@ class ExpressionGenerator implements SmlVisitor<any> {
     return {
       sym: ctx.text,
       type: {
-        tag: 'fn',
+        tag: FN,
         args: [{ tag: LIST, elem: listType }, { tag: LIST, elem: listType }],
-        res: { tag: LIST, elem: listType }
+        ret: { tag: LIST, elem: listType }
       },
       constraints: []
     }
@@ -536,9 +642,9 @@ class ExpressionGenerator implements SmlVisitor<any> {
     return {
       sym: ctx.text,
       type: {
-        tag: 'fn',
+        tag: FN,
         args: [listType, { tag: LIST, elem: listType }],
-        res: { tag: LIST, elem: listType }
+        ret: { tag: LIST, elem: listType }
       },
       constraints: []
     }
@@ -548,9 +654,9 @@ class ExpressionGenerator implements SmlVisitor<any> {
     return {
       sym: ctx.text,
       type: {
-        tag: 'fn',
+        tag: FN,
         args: [type, type],
-        res: BOOL,
+        ret: { tag: BOOL }
       },
       constraints: []
     }
@@ -566,12 +672,12 @@ class ExpressionGenerator implements SmlVisitor<any> {
     let type = this.freshType()
     const constraints = [...operator.constraints, ...expr.constraints]
     constraints.push({
-      tag: 'eq',
+      tag: EQ,
       frst: operator.type,
       scnd: {
-        tag: 'fn',
+        tag: FN,
         args: [expr.type],
-        res: type,
+        ret: type,
       },
     })
 
@@ -591,9 +697,9 @@ class ExpressionGenerator implements SmlVisitor<any> {
     return {
       sym: ctx.text,
       type: {
-        tag: 'fn',
+        tag: FN,
         args: [INT],
-        res: INT,
+        ret: INT,
       },
       constraints: []
     }
@@ -602,9 +708,9 @@ class ExpressionGenerator implements SmlVisitor<any> {
     return {
       sym: ctx.text,
       type: {
-        tag: 'fn',
+        tag: FN,
         args: [REAL],
-        res: REAL,
+        ret: REAL,
       },
       constraints: []
     }
@@ -613,9 +719,9 @@ class ExpressionGenerator implements SmlVisitor<any> {
     return {
       sym: ctx.text,
       type: {
-        tag: 'fn',
+        tag: FN,
         args: [BOOL],
-        res: BOOL,
+        ret: BOOL,
       },
       constraints: []
     }
@@ -636,9 +742,9 @@ class ExpressionGenerator implements SmlVisitor<any> {
 
     let type = this.freshType()
     const constraints = [...pred.constraints, ...cons.constraints, ...alt.constraints]
-    constraints.push({ tag: 'eq', frst: pred.type, scnd: { tag: BOOL } })
-    constraints.push({ tag: 'eq', frst: type, scnd: cons.type })
-    constraints.push({ tag: 'eq', frst: type, scnd: alt.type })
+    constraints.push({ tag: EQ, frst: pred.type, scnd: { tag: BOOL } })
+    constraints.push({ tag: EQ, frst: type, scnd: cons.type })
+    constraints.push({ tag: EQ, frst: type, scnd: alt.type })
 
     const substitutions = this.unifyConstraints(constraints)
     substitutions.forEach(sub => type = this.applySubstitution(type, sub))
@@ -686,9 +792,9 @@ class ExpressionGenerator implements SmlVisitor<any> {
       results: pats.map(pat => pat.result),
       // TODO
       type: {
-        tag: 'fn',
+        tag: FN,
         args: [pats[0].case.type],
-        res: pats[0].result.type,
+        ret: pats[0].result.type,
       },
       constraints: [],
     }
@@ -850,7 +956,7 @@ export function parse(source: string, context: Context) {
     if (error instanceof FatalSyntaxError) {
       context.errors.push(error)
     } else {
-      display(error, "[Parsing Error] ")
+      return "[Parsing Error] " + error
     }
   }
   const hasErrors = context.errors.find(m => m.severity === ErrorSeverity.ERROR)

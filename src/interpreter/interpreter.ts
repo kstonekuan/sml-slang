@@ -3,8 +3,8 @@ import { display, error, head, pair, stringify, tail } from 'sicp'
 
 import { Context } from '../types'
 import { command_to_string, debug } from './debug'
-import { assign, extend, global_environment, handle_sequence, lookup, scan, unassigned } from './environment'
-import { apply_binop, apply_builtin, apply_unop, peek, push, value_to_string } from './utils'
+import { assign, extend, global_environment, handle_sequence, lookup, scan } from './environment'
+import { apply_binop, apply_builtin, apply_unop, peek, push, unassigned, value_to_string } from './utils'
 
 /* **************************
  * interpreter configurations
@@ -52,18 +52,17 @@ let E: pair
 const microcode = {
   /** Simple Values */
   lit:
-    (cmd) => {
-      push(S, cmd.val)
-    },
+    cmd =>
+      push(S, cmd),
   nam:
     cmd =>
       push(S, lookup(cmd.sym, E)),
   unop:
     cmd =>
-      push(A, { tag: 'unop_i', sym: cmd.sym }, cmd.frst),
+      push(A, { tag: 'unop_i', sym: cmd.sym, type: cmd.type }, cmd.frst),
   binop:
     cmd =>
-      push(A, { tag: 'binop_i', sym: cmd.sym }, cmd.scnd, cmd.frst),
+      push(A, { tag: 'binop_i', sym: cmd.sym, type: cmd.type }, cmd.scnd, cmd.frst),
   log:
     cmd =>
       push(A, cmd.sym == '&&'
@@ -84,7 +83,7 @@ const microcode = {
       push(A, { tag: 'branch_i', cons: cmd.cons, alt: cmd.alt }, cmd.pred),
   app:
     cmd =>
-      push(A, { tag: 'app_i', arity: cmd.args.length },
+      push(A, { tag: 'app_i', arity: cmd.args.length, type: cmd.type },
         ...cmd.args, // already in reverse order, see ast_to_json
         cmd.fun),
   assmt:
@@ -92,19 +91,10 @@ const microcode = {
       push(A, { tag: 'assmt_i', sym: cmd.sym }, cmd.expr),
   lam:
     cmd =>
-      push(S, { tag: 'closure', prms: cmd.prms, body: cmd.body, env: extend(['rec'], [cmd.rec], E) }),
-  arr_acc:
-    cmd =>
-      push(A, { tag: 'arr_acc_i' }, cmd.ind, cmd.arr),
-  arr_len:
-    cmd =>
-      push(A, { tag: 'arr_len_i' }, cmd.expr),
+      push(S, { tag: 'closure', prms: cmd.prms, body: cmd.body, env: extend(['rec'], [cmd.rec], E), type: cmd.type }),
   arr_lit:
     cmd =>
-      push(A, { tag: 'arr_lit_i', arity: cmd.elems.length }, ...cmd.elems),
-  arr_assmt:
-    cmd =>
-      push(A, { tag: 'arr_assmt_i' }, cmd.expr, cmd.ind, cmd.arr),
+      push(A, { tag: 'arr_lit_i', arity: cmd.elems.length, type: cmd.type }, ...cmd.elems),
   let:
     cmd =>
       push(A, { tag: 'blk', body: { tag: 'seq', stmts: [...cmd.declarations, cmd.expr] } }),
@@ -149,7 +139,7 @@ const microcode = {
       push(A, {
         tag: 'letrec',
         sym: cmd.sym,
-        expr: { tag: 'lam', prms: cmd.prms, body: cmd.body }
+        expr: { tag: 'lam', prms: cmd.prms, body: cmd.body, type: cmd.type }
       }),
   pat_match:
     cmd =>
@@ -163,8 +153,8 @@ const microcode = {
       const arity = cmd.results.length
       const cases: any[] = []
       for (let i = arity - 1; i >= 0; i--)
-        cases[i] = S.pop()
-      const val = S.pop()
+        cases[i] = S.pop().val
+      const val = S.pop().val
       for (let i = 0; i < arity; i++) {
         if (cases[i] === val) {
           push(A, cmd.results[i])
@@ -181,10 +171,10 @@ const microcode = {
       assign(cmd.sym, peek(S), E),
   unop_i:
     cmd =>
-      push(S, apply_unop(cmd.sym, S.pop())),
+      push(S, { tag: 'lit', val: apply_unop(cmd.sym, S.pop().val), type: cmd.type }),
   binop_i:
     cmd =>
-      push(S, apply_binop(cmd.sym, S.pop(), S.pop())),
+      push(S, { tag: 'lit', val: apply_binop(cmd.sym, S.pop().val, S.pop().val), type: cmd.type }),
   pop_i:
     _ =>
       S.pop(),
@@ -199,7 +189,7 @@ const microcode = {
         args[i] = S.pop()
       const sf = S.pop()
       if (sf.tag === 'builtin')
-        return push(S, apply_builtin(sf.sym, args))
+        return push(S, { tag: 'lit', val: apply_builtin(sf.sym, args.map(arg => arg.val)), type: cmd.type }) // TODO: return list here?
       // remaining case: sf.tag === 'closure'
       if (A.length === 0 || peek(A).tag === 'env_i') {
         // current E not needed, tail call?
@@ -213,38 +203,19 @@ const microcode = {
     },
   branch_i:
     cmd =>
-      push(A, S.pop() ? cmd.cons : cmd.alt),
+      push(A, S.pop().val ? cmd.cons : cmd.alt),
   env_i:
     cmd =>
       E = cmd.env,
-  arr_acc_i:
-    cmd => {
-      const ind = S.pop()
-      const arr = S.pop()
-      push(S, arr[ind])
-    },
-  arr_len_i:
-    cmd => {
-      const arr = S.pop()
-      push(S, arr.length)
-    },
   arr_lit_i:
     cmd => {
       const arity = cmd.arity
       let list = null
       for (let i = 0; i < arity; i++) {
-        const val = S.pop()
+        const val = S.pop().val
         list = pair(val, list)
       }
-      push(S, { tag: 'list', body: list })
-    },
-  arr_assmt_i:
-    cmd => {
-      const val = S.pop()
-      const ind = S.pop()
-      const arr = S.pop()
-      arr[ind] = val
-      push(S, val)
+      push(S, { tag: 'list', body: list, type: cmd.type })
     },
   local_i:
     cmd => {
@@ -281,7 +252,7 @@ const microcode = {
     },
 }
 
-const step_limit = 1000000
+const step_limit = 1000
 
 // tslint:enable:object-literal-shorthand
 export function execute(program: any) {
@@ -289,7 +260,6 @@ export function execute(program: any) {
   S = []
   E = global_environment
   let i = 0
-  display(A, "A: ")
   while (i < step_limit) {
     if (A.length === 0) break
     const cmd = A.pop()
@@ -308,10 +278,10 @@ export function execute(program: any) {
     i++
   }
   if (i === step_limit) {
-    display("[Runtime Error] step limit " + stringify(step_limit) + " exceeded")
+    return display("[Runtime Error] step limit " + stringify(step_limit) + " exceeded")
   }
   if (S.length > 1 || S.length < 1) {
-    display(S, '[Runtime Error] stash must be singleton but is: ')
+    return display(S, '[Runtime Error] stash must be singleton but is: ')
   }
   return display(value_to_string(S[0]))
 

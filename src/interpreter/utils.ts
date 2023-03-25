@@ -21,22 +21,24 @@ export const peek = array =>
  * **********************/
 
 const binop_microcode = {
-    '+': (x, y) => (is_number(x) && is_number(y)) ||
-        (is_string(x) && is_string(y))
-        ? x + y
-        : error([x, y], "+ expects two numbers" +
-            " or two strings, got:"),
-    // todo: add error handling to JS for the following, too
+    '+': (x, y) => x + y,
+    '+.': (x, y) => x + y,
+    '^': (x, y) => x + y,
     '*': (x, y) => x * y,
+    '*.': (x, y) => x * y,
     '-': (x, y) => x - y,
+    '-.': (x, y) => x - y,
     '/': (x, y) => x / y,
+    'div': (x, y) => Math.floor(x / y),
     '%': (x, y) => x % y,
     '<': (x, y) => x < y,
     '<=': (x, y) => x <= y,
     '>=': (x, y) => x >= y,
     '>': (x, y) => x > y,
     '==': (x, y) => x === y,
-    '<>': (x, y) => x !== y
+    '<>': (x, y) => x !== y,
+    'andalso': (x, y) => x && y,
+    'orelse': (x, y) => x || y,
 }
 
 // v2 is popped before v1
@@ -44,6 +46,8 @@ export const apply_binop = (op, v2, v1) => binop_microcode[op](v1, v2)
 
 const unop_microcode = {
     '~': x => - x,
+    '~.': x => - x,
+    'not': x => !x,
     // '!': x => is_boolean(x)
     //     ? !x
     //     : error(x, '! expects boolean, found:')
@@ -140,6 +144,17 @@ export const apply_builtin = (builtin_symbol, args) =>
  * values of the interpreter
  * *************************/
 
+// At the start of executing a block, local 
+// variables refer to unassigned values.
+export const unassigned = { tag: 'unassigned' }
+
+export const is_unassigned = v => {
+    return v !== null &&
+        typeof v === "object" &&
+        v.hasOwnProperty('tag') &&
+        v.tag === 'unassigned'
+}
+
 // for numbers, strings, booleans, undefined, null
 // we use the value directly
 
@@ -159,6 +174,11 @@ export const is_list = x =>
     typeof x === "object" &&
     x.tag == 'list'
 
+export const is_lit = x =>
+    x !== null &&
+    typeof x === "object" &&
+    x.tag == 'lit'
+
 export const list_to_arr = x =>
     is_null(x) ? [] : [head(x), ...list_to_arr(tail(x))]
 
@@ -172,10 +192,14 @@ export function arr_to_list(arr: any[]) {
 
 // catching closure and builtins to get short displays
 export const value_to_string = x =>
-    is_closure(x)
-        ? '<closure>'
-        : is_builtin(x)
-            ? '<builtin: ' + x.sym + '>'
-            : is_list(x)
-                ? stringify(list_to_arr(x.body))
-                : stringify(x)
+    is_unassigned(x)
+        ? '<unassigned>'
+        : is_closure(x)
+            ? 'fn : ' + x.type.args.map(x => x.tag).join(' * ') + ' -> ' + x.type.ret.tag
+            : is_builtin(x)
+                ? '<builtin: ' + x.sym + '>'
+                : is_list(x)
+                    ? stringify(list_to_arr(x.body)) + " : " + x.type.elem.tag + " list"
+                    : is_lit(x)
+                        ? x.val + " : " + x.type.tag
+                        : stringify(x)

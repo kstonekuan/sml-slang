@@ -1,3 +1,5 @@
+import { display, stringify } from 'sicp'
+
 import { IOptions, Result } from '..'
 import { CannotFindModuleError } from '../errors/localImportErrors'
 import { evaluate } from '../interpreter/interpreter'
@@ -41,6 +43,16 @@ export async function sourceRunner(
   const program: any = parse(code, context)
   if (!program) {
     return resolvedErrorPromise
+  }
+
+  display(program, "Parsed program: ")
+
+  if (typeof program === 'string') {
+    return {
+      status: 'finished',
+      context,
+      value: program
+    }
   }
 
   // TODO: Remove this after runners have been refactored.

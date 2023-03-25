@@ -1,6 +1,6 @@
 import { arity, error, head, is_null, pair, tail } from 'sicp';
 
-import { builtin_mapping } from './utils'
+import { builtin_mapping, is_unassigned, unassigned } from './utils'
 
 /* ************
  * environments
@@ -64,16 +64,6 @@ export const extend = (xs, vs, e) => {
     return pair(new_frame, e)
 }
 
-// At the start of executing a block, local 
-// variables refer to unassigned values.
-export const unassigned = { tag: 'unassigned' }
-
-const is_unassigned = v => {
-    return v !== null &&
-        typeof v === "object" &&
-        v.hasOwnProperty('tag') &&
-        v.tag === 'unassigned'
-}
 
 /* ******************
  * handling sequences
