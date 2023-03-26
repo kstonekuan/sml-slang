@@ -1,3 +1,4 @@
+import { type } from 'os';
 import { display, error, head, is_boolean, is_null, is_number, is_string, pair, stringify, tail } from 'sicp';
 
 /* **********************
@@ -39,6 +40,10 @@ const binop_microcode = {
     '<>': (x, y) => x !== y,
     'andalso': (x, y) => x && y,
     'orelse': (x, y) => x || y,
+    '::': (x, y) => y.unshift(x),
+    '@': (x, y) => is_null(y)
+        ? error(y, 'cannot append to null')
+        : pair(head(y), x),
 }
 
 // v2 is popped before v1

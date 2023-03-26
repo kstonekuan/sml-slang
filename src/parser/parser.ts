@@ -629,6 +629,8 @@ class ExpressionGenerator implements SmlVisitor<any> {
     const left = this.visit(ctx._left)
     const right = this.visit(ctx._right)
 
+    display("Here: " + operator.type.tag)
+    
     let type = this.freshType()
     const constraints = [...operator.constraints, ...left.constraints, ...right.constraints]
     constraints.push({
@@ -712,21 +714,6 @@ class ExpressionGenerator implements SmlVisitor<any> {
   }
   visitListConstructBinop(ctx: ListConstructBinopContext): any {
     const listType = this.freshType()
-    
-    // const constraints = [...operator.constraints, ...expr.constraints]
-    // constraints.push({
-    //   tag: EQ,
-    //   frst: operator.type,
-    //   scnd: {
-    //     tag: FN,
-    //     args: [expr.type],
-    //     ret: type,
-    //   },
-    // })
-
-    // const substitutions = this.unifyConstraints(constraints)
-    // substitutions.forEach(sub => type = this.applySubstitution(type, sub))
-
 
     return {
       sym: ctx.text,
