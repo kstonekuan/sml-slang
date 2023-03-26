@@ -6,7 +6,7 @@ import { RuleNode } from 'antlr4ts/tree/RuleNode'
 import { TerminalNode } from 'antlr4ts/tree/TerminalNode'
 import { display, error, head, is_null, is_undefined, pair, stringify, tail } from 'sicp'
 
-import { assign, extend, lookup } from '../interpreter/environment'
+import { assign, extend, global_environment,lookup } from '../interpreter/environment'
 import { unassigned } from '../interpreter/utils'
 import { SmlLexer } from '../lang/SmlLexer'
 import { ApplyContext, BinopContext, BoolExpressionContext, CharExpressionContext, ExpressionListContext, IdentifierContext, IntExpressionContext, ListContext, NextPatternContext, NilListContext, RealExpressionContext, SmlParser, StringExpressionContext, UnitExpressionContext, UnopContext } from "../lang/SmlParser";
@@ -171,7 +171,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
   private letterGenerator: LetterGenerator
 
   constructor() {
-    this.E = pair({}, null)
+    this.E = global_environment
     this.letterGenerator = new LetterGenerator()
   }
 
@@ -712,6 +712,22 @@ class ExpressionGenerator implements SmlVisitor<any> {
   }
   visitListConstructBinop(ctx: ListConstructBinopContext): any {
     const listType = this.freshType()
+    
+    // const constraints = [...operator.constraints, ...expr.constraints]
+    // constraints.push({
+    //   tag: EQ,
+    //   frst: operator.type,
+    //   scnd: {
+    //     tag: FN,
+    //     args: [expr.type],
+    //     ret: type,
+    //   },
+    // })
+
+    // const substitutions = this.unifyConstraints(constraints)
+    // substitutions.forEach(sub => type = this.applySubstitution(type, sub))
+
+
     return {
       sym: ctx.text,
       type: {
