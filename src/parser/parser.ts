@@ -181,8 +181,10 @@ class ExpressionGenerator implements SmlVisitor<any> {
     }
   }
 
-  recycleTypeVariable(typeVariable: any): void {
-    this.letterGenerator.recycle(typeVariable.tag.slice(1))
+  recycleTypeVariableFromSubstitution(substitution: pair): void {
+    if (this.isTypeVariable(tail(substitution))) {
+      this.letterGenerator.recycle(tail(substitution).tag.slice(1))
+    }
   }
 
   isTypeVariable(type: any): boolean {
@@ -218,13 +220,11 @@ class ExpressionGenerator implements SmlVisitor<any> {
 
     if (this.isTypeVariable(first.frst) && !this.isTypeVariableInType(first.frst, first.scnd)) {
       const substitution = pair(first.scnd, first.frst)
-      this.recycleTypeVariable(first.frst)
       return [substitution, ...this.unifyConstraints(rest.map(constraint => this.applySubstitution(constraint, substitution)))]
     }
 
     if (this.isTypeVariable(first.scnd) && !this.isTypeVariableInType(first.scnd, first.frst)) {
       const substitution = pair(first.frst, first.scnd)
-      this.recycleTypeVariable(first.scnd)
       return [substitution, ...this.unifyConstraints(rest.map(constraint => this.applySubstitution(constraint, substitution)))]
     }
 
@@ -429,7 +429,10 @@ class ExpressionGenerator implements SmlVisitor<any> {
     constraints.push({ tag: EQ, frst: type, scnd: expr.type })
 
     const substitutions = this.unifyConstraints(constraints)
-    substitutions.forEach(sub => type = this.applySubstitution(type, sub))
+    substitutions.forEach(sub => {
+      type = this.applySubstitution(type, sub)
+      this.recycleTypeVariableFromSubstitution(sub)
+    })
 
     this.E = originalEnv
     head(this.E)[sym] = type
@@ -472,7 +475,10 @@ class ExpressionGenerator implements SmlVisitor<any> {
     })
 
     const substitutions = this.unifyConstraints(constraints)
-    substitutions.forEach(sub => type = this.applySubstitution(type, sub))
+    substitutions.forEach(sub => {
+      type = this.applySubstitution(type, sub)
+      this.recycleTypeVariableFromSubstitution(sub)
+    })
 
     this.E = originalEnv
     head(this.E)[sym] = type
