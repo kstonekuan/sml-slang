@@ -864,18 +864,22 @@ class ExpressionGenerator implements SmlVisitor<any> {
     //   and env |- e3 : t3 -| C3
     const pats = ctx._otherPatterns.map(pat => this.visit(pat))
     pats.unshift({ tag: 'pat', case: this.visit(ctx._firstCase), result: this.visit(ctx._firstResult) })
+
+    let type = this.freshType()
+    const constraints = [...pats.map(pat => pat.case.constraints).flat(), ...pats.map(pat => pat.result.constraints).flat()]
+    pats.forEach(pat => constraints.push({ tag: EQ, frst: type, scnd: pat.result.type }))
+
+    const substitutions = this.unifyConstraints(constraints)
+    substitutions.forEach(sub => type = this.applySubstitution(type, sub))
+
     return {
       tag: 'pat_match',
       val: this.visit(ctx._value),
       cases: pats.map(pat => pat.case).reverse(),
       results: pats.map(pat => pat.result),
       // TODO
-      type: {
-        tag: FN,
-        args: [pats[0].case.type],
-        ret: pats[0].result.type,
-      },
-      constraints: [],
+      type: type,
+      constraints: constraints,
     }
   }
   visitNextPattern(ctx: NextPatternContext): any {
