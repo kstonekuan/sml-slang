@@ -189,7 +189,10 @@ const microcode = {
         args[i] = S.pop()
       const sf = S.pop()
       if (sf.tag === 'builtin')
-        return push(S, { tag: 'lit', val: apply_builtin(sf.sym, args.map(arg => arg.val)), type: cmd.type }) // TODO: return list here?
+        if (sf.sym === 'hd' || sf.sym === 'tl')
+          return push(S, { tag: 'lit', val: apply_builtin(sf.sym, args.map(arg => arg.body)), type: cmd.type }) // TODO: return list here?
+        else
+          return push(S, { tag: 'lit', val: apply_builtin(sf.sym, args.map(arg => arg.val)), type: cmd.type }) // TODO: return list here?
       // remaining case: sf.tag === 'closure'
       if (A.length === 0 || peek(A).tag === 'env_i') {
         // current E not needed, tail call?
