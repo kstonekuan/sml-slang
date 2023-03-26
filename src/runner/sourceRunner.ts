@@ -45,7 +45,7 @@ export async function sourceRunner(
     return resolvedErrorPromise
   }
 
-  display(program, "Parsed program: ")
+  display(program, "[sourceRunner.ts] Parsed program: ")
 
   if (typeof program === 'string') {
     return {

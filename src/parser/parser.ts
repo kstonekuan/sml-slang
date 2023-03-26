@@ -4,17 +4,20 @@ import { ErrorNode } from 'antlr4ts/tree/ErrorNode'
 import { ParseTree } from 'antlr4ts/tree/ParseTree'
 import { RuleNode } from 'antlr4ts/tree/RuleNode'
 import { TerminalNode } from 'antlr4ts/tree/TerminalNode'
-import { display, head, is_null, is_undefined, pair, stringify, tail } from 'sicp'
+import { display, error, head, is_null, is_undefined, pair, stringify, tail } from 'sicp'
 
 import { assign, extend, lookup } from '../interpreter/environment'
 import { unassigned } from '../interpreter/utils'
 import { SmlLexer } from '../lang/SmlLexer'
 import { ApplyContext, BinopContext, BoolExpressionContext, CharExpressionContext, ExpressionListContext, IdentifierContext, IntExpressionContext, ListContext, NextPatternContext, NilListContext, RealExpressionContext, SmlParser, StringExpressionContext, UnitExpressionContext, UnopContext } from "../lang/SmlParser";
+import { ApplyUnitContext } from '../lang/SmlParser'
 import { IdentifierExpressionContext } from "../lang/SmlParser";
 import { ListExpressionContext } from "../lang/SmlParser";
 import { ConditionalExpressionContext } from "../lang/SmlParser";
 import { ApplyExpressionContext } from "../lang/SmlParser";
+import { ApplyUnitExpressionContext } from "../lang/SmlParser";
 import { LambdaExpressionContext } from "../lang/SmlParser";
+import { LambdaUnitExpressionContext } from "../lang/SmlParser";
 import { ParenthesesExpressionContext } from "../lang/SmlParser";
 import { BinaryOperatorExpressionContext } from "../lang/SmlParser";
 import { UnaryOperatorExpressionContext } from "../lang/SmlParser";
@@ -23,6 +26,7 @@ import { PatternMatchExpressionContext } from "../lang/SmlParser";
 import { VariableDeclarationContext } from "../lang/SmlParser";
 import { LetrecDeclarationContext } from "../lang/SmlParser";
 import { FunctionDeclarationContext } from "../lang/SmlParser";
+import { FunctionUnitDeclarationContext } from "../lang/SmlParser";
 import { LocalBlockDeclarationContext } from "../lang/SmlParser";
 import { DeclarationStatementContext } from "../lang/SmlParser";
 import { ExpressionStatementContext } from "../lang/SmlParser";
@@ -31,8 +35,10 @@ import { StatementContext } from "../lang/SmlParser";
 import { VariableContext } from "../lang/SmlParser";
 import { LetrecContext } from "../lang/SmlParser";
 import { FunctionContext } from "../lang/SmlParser";
+import { FunctionUnitContext } from "../lang/SmlParser";
 import { DeclarationContext } from "../lang/SmlParser";
 import { LambdaContext } from "../lang/SmlParser";
+import { LambdaUnitContext } from "../lang/SmlParser";
 import { ExpressionContext } from "../lang/SmlParser";
 import { ParenthesesContext } from '../lang/SmlParser'
 import { IntUnopContext } from "../lang/SmlParser";
@@ -198,7 +204,6 @@ class ExpressionGenerator implements SmlVisitor<any> {
   }
 
   unifyConstraints(constraints: any[]): pair[] {
-    // TODO
     // display(constraints, "Unifying: ")
 
     if (constraints.length === 0) {
@@ -229,7 +234,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
 
     if (first.frst.tag === FN && first.scnd.tag === FN) {
       if (first.frst.args.length !== first.scnd.args.length) {
-        throw new Error(`Function types in constraint ${stringify(first)} must have the same number of arguments`)
+        throw new Error(`TypeError: Function types in constraint ${stringify(first)} must have the same number of arguments`)
       }
       return this.unifyConstraints([
         { tag: EQ, frst: first.frst.ret, scnd: first.scnd.ret },
@@ -239,14 +244,13 @@ class ExpressionGenerator implements SmlVisitor<any> {
     }
 
     if (PRIMS.includes(first.frst.tag) && (first.frst.tag !== first.scnd.tag)) {
-      throw new Error(`Types in constraint [${stringify(first)}] cannot be unified`)
+      throw new Error(`TypeError: Types in constraint [${stringify(first)}] cannot be unified`)
     }
 
     return []
   }
 
   applySubstitution(type: any, substitution: pair): any {
-    // TODO
     if (type.tag === EQ) {
       return {
         tag: EQ,
@@ -362,7 +366,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
 
     elems.forEach(elem => {
       if (elem.type.tag !== listType.tag) {
-        throw new Error(`List elements must be of the same type: at ${stringify(contextToLocation(ctx))}`)
+        throw new Error(`TypeError: List elements must be of the same type: at ${stringify(contextToLocation(ctx))}`)
       }
     })
     return {
@@ -390,17 +394,18 @@ class ExpressionGenerator implements SmlVisitor<any> {
     return this.visit(ctx._body)
   }
   visitVariable(ctx: VariableContext): any {
+    display(ctx._name.text, '[parser.ts] Variable -> _name.text: ')
     const sym = ctx._name.text
     const expr = this.visit(ctx._value)
+    const type = expr.type
 
-    this.E = extend([sym], [unassigned], this.E)
-    assign(sym, expr.type, this.E)
+    head(this.E)[sym] = type
 
     return {
       tag: 'val',
       sym: sym,
       expr: expr,
-      type: expr.type,
+      type: type,
       constraints: []
     }
   }
@@ -408,11 +413,17 @@ class ExpressionGenerator implements SmlVisitor<any> {
     return this.visit(ctx._body)
   }
   visitLetrec(ctx: LetrecContext): any {
+    display(ctx._name.text, '[parser.ts] Letrec -> _name.text: ')
     const sym = ctx._name.text
+    // Support recursive functions
     let type = this.freshType()
     const originalEnv = this.E
-    this.E = extend([sym], [type], this.E) // TODO fix recusrive funcs
+    this.E = extend([sym], [type], this.E)
     const expr = this.visit(ctx._value)
+
+    if (expr.tag === 'lam' && expr.prms.length === 0) {
+      throw new Error(`TypeError: Letrec function cannot be a lambda with unit argument: at ${stringify(contextToLocation(ctx))}`)
+    }
 
     const constraints = expr.constraints
     constraints.push({ tag: EQ, frst: type, scnd: expr.type })
@@ -421,8 +432,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
     substitutions.forEach(sub => type = this.applySubstitution(type, sub))
 
     this.E = originalEnv
-    this.E = extend([sym], [unassigned], this.E)
-    assign(sym, expr.type, this.E)
+    head(this.E)[sym] = type
 
     return {
       tag: 'letrec',
@@ -433,20 +443,21 @@ class ExpressionGenerator implements SmlVisitor<any> {
     }
   }
   visitFunctionDeclaration(ctx: FunctionDeclarationContext): any {
-    display('function declaration')
     return this.visit(ctx._body)
   }
   visitFunction(ctx: FunctionContext): any {
     // env |- fun x -> e : 't1 -> t2 -| C
     //   if fresh 't1
     //   and env, x : 't1 |- e : t2 -| C
+    display(ctx._name.text, '[parser.ts] Function -> _name.text: ')
     const sym = ctx._name.text
     const prms = ctx._rest.map(element => element.text)
     prms.unshift(ctx._first.text)
     const prmsTypes = prms.map(_ => this.freshType())
+    // Support recursive functions
     let type = this.freshType()
     const originalEnv = this.E
-    this.E = extend([...prms, sym], [...prmsTypes, type], this.E) // TODO fix recusrive funcs
+    this.E = extend([...prms, sym], [...prmsTypes, type], this.E)
     const body = this.visit(ctx._body)
 
     const constraints = body.constraints
@@ -464,23 +475,45 @@ class ExpressionGenerator implements SmlVisitor<any> {
     substitutions.forEach(sub => type = this.applySubstitution(type, sub))
 
     this.E = originalEnv
-    this.E = extend([sym], [unassigned], this.E)
-    assign(sym, type, this.E)
+    head(this.E)[sym] = type
 
     return {
-      tag: 'fun',
+      tag: 'letrec',
       sym: sym,
-      prms: prms,
-      body: body,
-      type: type,
-      constraints: [],
+      expr: { tag: 'lam', prms: prms, body: body, type: type, constraints: [] }
     }
+  }
+  visitFunctionUnitDeclaration(ctx: FunctionUnitDeclarationContext): any {
+    return this.visit(ctx._body)
+  }
+  visitFunctionUnit(ctx: FunctionUnitContext): any {
+    // Special case: argument type already known, cannot be recursive
+    display(ctx._name.text, '[parser.ts] FunctionUnit -> _name.text: ')
+    const sym = ctx._name.text
+    const body = this.visit(ctx._body)
+
+    const type = {
+      tag: FN,
+      args: [{ tag: UNIT }],
+      ret: body.type,
+    }
+    head(this.E)[sym] = type
+
+    return {
+      tag: 'val',
+      sym: sym,
+      expr: { tag: 'lam', prms: [], body: body, type: type, constraints: [] }
+    }
+  }
+  visitApplyExpression(ctx: ApplyExpressionContext): any {
+    return this.visit(ctx._body)
   }
   visitApply(ctx: ApplyContext): any {
     // env |- e1 e2 : 't -| C1, C2, t1 = t2 -> 't
     //   if fresh 't
     //   and env |- e1 : t1 -| C1
     //   and env |- e2 : t2 -| C2
+    display(ctx._identifierApply.text, '[parser.ts] Apply -> _identifierApply.text: ')
     const args = ctx._rest.map(element => this.visit(element))
     args.unshift(this.visit(ctx._first))
     const fun = this.visit(ctx._identifierApply)
@@ -509,8 +542,21 @@ class ExpressionGenerator implements SmlVisitor<any> {
       constraints: constraints,
     }
   }
-  visitApplyExpression(ctx: ApplyExpressionContext): any {
+  visitApplyUnitExpression(ctx: ApplyUnitExpressionContext): any {
     return this.visit(ctx._body)
+  }
+  visitApplyUnit(ctx: ApplyUnitContext): any {
+    // Special case: no argument types to check
+    display(ctx._identifierApply.text, '[parser.ts] ApplyUnit -> _identifierApply.text: ')
+    const fun = this.visit(ctx._identifierApply)
+
+    return {
+      tag: 'app',
+      fun: fun,    // TODO: struct
+      args: [],
+      type: fun.type.ret,
+      constraints: [],
+    }
   }
   visitLambdaExpression(ctx: LambdaExpressionContext): any {
     return this.visit(ctx._body)
@@ -546,12 +592,33 @@ class ExpressionGenerator implements SmlVisitor<any> {
       constraints: constraints,
     }
   }
+  visitLambdaUnitExpression(ctx: LambdaUnitExpressionContext): any {
+    return this.visit(ctx._body)
+  }
+  visitLambdaUnit(ctx: LambdaUnitContext): any {
+    // Special case: no argument type already known
+    const body = this.visit(ctx._body)
+
+    const type = {
+      tag: FN,
+      args: [{ tag: UNIT }], // conceptually args is a tuple
+      ret: body.type,
+    }
+
+    return {
+      tag: 'lam',
+      prms: [],
+      body: body,
+      type: type,
+      constraints: [],
+    }
+  }
   visitBinaryOperatorExpression(ctx: BinaryOperatorExpressionContext): any {
     // env |- e1 e2 : 't -| C1, C2, t1 = t2 -> 't
     //   if fresh 't
     //   and env |- e1 : t1 -| C1
     //   and env |- e2 : t2 -| C2
-    display(ctx._operator.text, "BinaryOperatorExpression -> _operator.text: ")
+    display(ctx._operator.text, "[parser.ts] BinaryOperatorExpression -> _operator.text: ")
     const operator = this.visit(ctx._operator)
     const left = this.visit(ctx._left)
     const right = this.visit(ctx._right)
@@ -666,6 +733,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
     //   if fresh 't
     //   and env |- e1 : t1 -| C1
     //   and env |- e2 : t2 -| C2
+    display(ctx._operator.text, "[parser.ts] UnaryOperatorExpression -> _operator.text: ")
     const operator = this.visit(ctx._operator)
     const expr = this.visit(ctx._expr)
 
@@ -783,6 +851,11 @@ class ExpressionGenerator implements SmlVisitor<any> {
     }
   }
   visitPatternMatchExpression(ctx: PatternMatchExpressionContext): any {
+    // env |- if e1 then e2 else e3 : 't -| C1, C2, C3, t1 = bool, 't = t2, 't = t3
+    //   if fresh 't
+    //   and env |- e1 : t1 -| C1
+    //   and env |- e2 : t2 -| C2
+    //   and env |- e3 : t3 -| C3
     const pats = ctx._otherPatterns.map(pat => this.visit(pat))
     pats.unshift({ tag: 'pat', case: this.visit(ctx._firstCase), result: this.visit(ctx._firstResult) })
     return {
@@ -812,7 +885,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
   visitDeclaration?(ctx: DeclarationContext): any | undefined
   visitExpression?(ctx: ExpressionContext): any | undefined
   visitStart(ctx: StartContext): any {
-    display(ctx._statements, "StartContext -> _statements: ")
+    // display(ctx._statements, "[parser.ts] StartContext -> _statements: ")
     return ctx._statements.map(statement => this.visit(statement))
   }
   visitStatement?(ctx: StatementContext): any | undefined
@@ -942,7 +1015,7 @@ function convertSource(tree: StartContext): any {
 export function parse(source: string, context: Context) {
   let program: any | undefined
 
-  display(source, "Source string: ")
+  display(source, "[parser.ts] Source string: ")
 
   const inputStream = CharStreams.fromString(source)
   const lexer = new SmlLexer(inputStream)
@@ -956,7 +1029,7 @@ export function parse(source: string, context: Context) {
     if (error instanceof FatalSyntaxError) {
       context.errors.push(error)
     } else {
-      return "[Parsing Error] " + error
+      return "[parser.ts] " + error
     }
   }
   const hasErrors = context.errors.find(m => m.severity === ErrorSeverity.ERROR)

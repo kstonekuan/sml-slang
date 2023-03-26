@@ -93,15 +93,19 @@ variable: VAL name = IDENTIFIER ASSIGN value = expression;
 
 letrec: VAL REC name = IDENTIFIER ASSIGN value = expression;
 
+functionUnit:
+	FUN name = IDENTIFIER UNIT ASSIGN body = expression;
+
 function:
 	FUN name = IDENTIFIER '(' first = IDENTIFIER (
 		COMMA rest += IDENTIFIER
 	)* ')' ASSIGN body = expression;
 
 declaration:
-	body = variable		# variableDeclaration
-	| body = letrec		# letrecDeclaration
-	| body = function	# functionDeclaration
+	body = variable			# variableDeclaration
+	| body = letrec			# letrecDeclaration
+	| body = functionUnit	# functionUnitDeclaration
+	| body = function		# functionDeclaration
 	| LOCAL (declarations += declaration)+ IN (
 		body += declaration
 	)+ END # localBlockDeclaration;
@@ -133,10 +137,14 @@ list:
 	L_BRACKET first = expression (COMMA rest += expression)* R_BRACKET	# expressionList
 	| LIST_NIL															# nilList;
 
+lambdaUnit: FN UNIT DOUBLE_ARROW body = expression;
+
 lambda:
 	FN '(' first = IDENTIFIER (COMMA rest += IDENTIFIER)* ')' DOUBLE_ARROW body = expression;
 
 parentheses: '(' inner = expression ')';
+
+applyUnit: identifierApply = identifier UNIT;
 
 apply:
 	(
@@ -147,19 +155,21 @@ apply:
 identifier: IDENTIFIER;
 
 expression:
-	INT						# intExpression
+	body = applyUnit		# applyUnitExpression
+	| body = apply			# applyExpression
+	| INT					# intExpression
 	| REAL					# realExpression
 	| BOOL					# boolExpression
 	| UNIT					# unitExpression
 	| CHAR					# charExpression
 	| STRING				# stringExpression
-	| body = apply			# applyExpression
 	| body = identifier		# identifierExpression
 	| body = parentheses	# parenthesesExpression
 	// | '(' first = expression (COMMA rest += expression)+ ')'									# tupleExpression
 	| body = list																				# listExpression
 	| IF predicate = parentheses THEN consequent = parentheses ELSE alternative = parentheses	#
 		conditionalExpression
+	| body = lambdaUnit												# lambdaUnitExpression
 	| body = lambda													# lambdaExpression
 	| left = expression operator = binop right = expression			# binaryOperatorExpression
 	| operator = unop expr = expression								# unaryOperatorExpression

@@ -3,17 +3,19 @@
 
 import { ParseTreeVisitor } from "antlr4ts/tree/ParseTreeVisitor";
 
+import { ApplyUnitExpressionContext } from "./SmlParser";
+import { ApplyExpressionContext } from "./SmlParser";
 import { IntExpressionContext } from "./SmlParser";
 import { RealExpressionContext } from "./SmlParser";
 import { BoolExpressionContext } from "./SmlParser";
 import { UnitExpressionContext } from "./SmlParser";
 import { CharExpressionContext } from "./SmlParser";
 import { StringExpressionContext } from "./SmlParser";
-import { ApplyExpressionContext } from "./SmlParser";
 import { IdentifierExpressionContext } from "./SmlParser";
 import { ParenthesesExpressionContext } from "./SmlParser";
 import { ListExpressionContext } from "./SmlParser";
 import { ConditionalExpressionContext } from "./SmlParser";
+import { LambdaUnitExpressionContext } from "./SmlParser";
 import { LambdaExpressionContext } from "./SmlParser";
 import { BinaryOperatorExpressionContext } from "./SmlParser";
 import { UnaryOperatorExpressionContext } from "./SmlParser";
@@ -26,6 +28,7 @@ import { ExpressionListContext } from "./SmlParser";
 import { NilListContext } from "./SmlParser";
 import { VariableDeclarationContext } from "./SmlParser";
 import { LetrecDeclarationContext } from "./SmlParser";
+import { FunctionUnitDeclarationContext } from "./SmlParser";
 import { FunctionDeclarationContext } from "./SmlParser";
 import { LocalBlockDeclarationContext } from "./SmlParser";
 import { DeclarationStatementContext } from "./SmlParser";
@@ -41,13 +44,16 @@ import { StartContext } from "./SmlParser";
 import { StatementContext } from "./SmlParser";
 import { VariableContext } from "./SmlParser";
 import { LetrecContext } from "./SmlParser";
+import { FunctionUnitContext } from "./SmlParser";
 import { FunctionContext } from "./SmlParser";
 import { DeclarationContext } from "./SmlParser";
 import { BinopContext } from "./SmlParser";
 import { UnopContext } from "./SmlParser";
 import { ListContext } from "./SmlParser";
+import { LambdaUnitContext } from "./SmlParser";
 import { LambdaContext } from "./SmlParser";
 import { ParenthesesContext } from "./SmlParser";
+import { ApplyUnitContext } from "./SmlParser";
 import { ApplyContext } from "./SmlParser";
 import { IdentifierContext } from "./SmlParser";
 import { ExpressionContext } from "./SmlParser";
@@ -62,6 +68,22 @@ import { NextPatternContext } from "./SmlParser";
  * operations with no return type.
  */
 export interface SmlVisitor<Result> extends ParseTreeVisitor<Result> {
+	/**
+	 * Visit a parse tree produced by the `applyUnitExpression`
+	 * labeled alternative in `SmlParser.expression`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitApplyUnitExpression?: (ctx: ApplyUnitExpressionContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by the `applyExpression`
+	 * labeled alternative in `SmlParser.expression`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitApplyExpression?: (ctx: ApplyExpressionContext) => Result;
+
 	/**
 	 * Visit a parse tree produced by the `intExpression`
 	 * labeled alternative in `SmlParser.expression`.
@@ -111,14 +133,6 @@ export interface SmlVisitor<Result> extends ParseTreeVisitor<Result> {
 	visitStringExpression?: (ctx: StringExpressionContext) => Result;
 
 	/**
-	 * Visit a parse tree produced by the `applyExpression`
-	 * labeled alternative in `SmlParser.expression`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitApplyExpression?: (ctx: ApplyExpressionContext) => Result;
-
-	/**
 	 * Visit a parse tree produced by the `identifierExpression`
 	 * labeled alternative in `SmlParser.expression`.
 	 * @param ctx the parse tree
@@ -149,6 +163,14 @@ export interface SmlVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitConditionalExpression?: (ctx: ConditionalExpressionContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by the `lambdaUnitExpression`
+	 * labeled alternative in `SmlParser.expression`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitLambdaUnitExpression?: (ctx: LambdaUnitExpressionContext) => Result;
 
 	/**
 	 * Visit a parse tree produced by the `lambdaExpression`
@@ -245,6 +267,14 @@ export interface SmlVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitLetrecDeclaration?: (ctx: LetrecDeclarationContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by the `functionUnitDeclaration`
+	 * labeled alternative in `SmlParser.declaration`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitFunctionUnitDeclaration?: (ctx: FunctionUnitDeclarationContext) => Result;
 
 	/**
 	 * Visit a parse tree produced by the `functionDeclaration`
@@ -363,6 +393,13 @@ export interface SmlVisitor<Result> extends ParseTreeVisitor<Result> {
 	visitLetrec?: (ctx: LetrecContext) => Result;
 
 	/**
+	 * Visit a parse tree produced by `SmlParser.functionUnit`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitFunctionUnit?: (ctx: FunctionUnitContext) => Result;
+
+	/**
 	 * Visit a parse tree produced by `SmlParser.function`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -398,6 +435,13 @@ export interface SmlVisitor<Result> extends ParseTreeVisitor<Result> {
 	visitList?: (ctx: ListContext) => Result;
 
 	/**
+	 * Visit a parse tree produced by `SmlParser.lambdaUnit`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitLambdaUnit?: (ctx: LambdaUnitContext) => Result;
+
+	/**
 	 * Visit a parse tree produced by `SmlParser.lambda`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -410,6 +454,13 @@ export interface SmlVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitParentheses?: (ctx: ParenthesesContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by `SmlParser.applyUnit`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitApplyUnit?: (ctx: ApplyUnitContext) => Result;
 
 	/**
 	 * Visit a parse tree produced by `SmlParser.apply`.

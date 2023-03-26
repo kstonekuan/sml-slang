@@ -3,17 +3,19 @@
 
 import { ParseTreeListener } from "antlr4ts/tree/ParseTreeListener";
 
+import { ApplyUnitExpressionContext } from "./SmlParser";
+import { ApplyExpressionContext } from "./SmlParser";
 import { IntExpressionContext } from "./SmlParser";
 import { RealExpressionContext } from "./SmlParser";
 import { BoolExpressionContext } from "./SmlParser";
 import { UnitExpressionContext } from "./SmlParser";
 import { CharExpressionContext } from "./SmlParser";
 import { StringExpressionContext } from "./SmlParser";
-import { ApplyExpressionContext } from "./SmlParser";
 import { IdentifierExpressionContext } from "./SmlParser";
 import { ParenthesesExpressionContext } from "./SmlParser";
 import { ListExpressionContext } from "./SmlParser";
 import { ConditionalExpressionContext } from "./SmlParser";
+import { LambdaUnitExpressionContext } from "./SmlParser";
 import { LambdaExpressionContext } from "./SmlParser";
 import { BinaryOperatorExpressionContext } from "./SmlParser";
 import { UnaryOperatorExpressionContext } from "./SmlParser";
@@ -26,6 +28,7 @@ import { ExpressionListContext } from "./SmlParser";
 import { NilListContext } from "./SmlParser";
 import { VariableDeclarationContext } from "./SmlParser";
 import { LetrecDeclarationContext } from "./SmlParser";
+import { FunctionUnitDeclarationContext } from "./SmlParser";
 import { FunctionDeclarationContext } from "./SmlParser";
 import { LocalBlockDeclarationContext } from "./SmlParser";
 import { DeclarationStatementContext } from "./SmlParser";
@@ -41,13 +44,16 @@ import { StartContext } from "./SmlParser";
 import { StatementContext } from "./SmlParser";
 import { VariableContext } from "./SmlParser";
 import { LetrecContext } from "./SmlParser";
+import { FunctionUnitContext } from "./SmlParser";
 import { FunctionContext } from "./SmlParser";
 import { DeclarationContext } from "./SmlParser";
 import { BinopContext } from "./SmlParser";
 import { UnopContext } from "./SmlParser";
 import { ListContext } from "./SmlParser";
+import { LambdaUnitContext } from "./SmlParser";
 import { LambdaContext } from "./SmlParser";
 import { ParenthesesContext } from "./SmlParser";
+import { ApplyUnitContext } from "./SmlParser";
 import { ApplyContext } from "./SmlParser";
 import { IdentifierContext } from "./SmlParser";
 import { ExpressionContext } from "./SmlParser";
@@ -59,6 +65,32 @@ import { NextPatternContext } from "./SmlParser";
  * `SmlParser`.
  */
 export interface SmlListener extends ParseTreeListener {
+	/**
+	 * Enter a parse tree produced by the `applyUnitExpression`
+	 * labeled alternative in `SmlParser.expression`.
+	 * @param ctx the parse tree
+	 */
+	enterApplyUnitExpression?: (ctx: ApplyUnitExpressionContext) => void;
+	/**
+	 * Exit a parse tree produced by the `applyUnitExpression`
+	 * labeled alternative in `SmlParser.expression`.
+	 * @param ctx the parse tree
+	 */
+	exitApplyUnitExpression?: (ctx: ApplyUnitExpressionContext) => void;
+
+	/**
+	 * Enter a parse tree produced by the `applyExpression`
+	 * labeled alternative in `SmlParser.expression`.
+	 * @param ctx the parse tree
+	 */
+	enterApplyExpression?: (ctx: ApplyExpressionContext) => void;
+	/**
+	 * Exit a parse tree produced by the `applyExpression`
+	 * labeled alternative in `SmlParser.expression`.
+	 * @param ctx the parse tree
+	 */
+	exitApplyExpression?: (ctx: ApplyExpressionContext) => void;
+
 	/**
 	 * Enter a parse tree produced by the `intExpression`
 	 * labeled alternative in `SmlParser.expression`.
@@ -138,19 +170,6 @@ export interface SmlListener extends ParseTreeListener {
 	exitStringExpression?: (ctx: StringExpressionContext) => void;
 
 	/**
-	 * Enter a parse tree produced by the `applyExpression`
-	 * labeled alternative in `SmlParser.expression`.
-	 * @param ctx the parse tree
-	 */
-	enterApplyExpression?: (ctx: ApplyExpressionContext) => void;
-	/**
-	 * Exit a parse tree produced by the `applyExpression`
-	 * labeled alternative in `SmlParser.expression`.
-	 * @param ctx the parse tree
-	 */
-	exitApplyExpression?: (ctx: ApplyExpressionContext) => void;
-
-	/**
 	 * Enter a parse tree produced by the `identifierExpression`
 	 * labeled alternative in `SmlParser.expression`.
 	 * @param ctx the parse tree
@@ -201,6 +220,19 @@ export interface SmlListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitConditionalExpression?: (ctx: ConditionalExpressionContext) => void;
+
+	/**
+	 * Enter a parse tree produced by the `lambdaUnitExpression`
+	 * labeled alternative in `SmlParser.expression`.
+	 * @param ctx the parse tree
+	 */
+	enterLambdaUnitExpression?: (ctx: LambdaUnitExpressionContext) => void;
+	/**
+	 * Exit a parse tree produced by the `lambdaUnitExpression`
+	 * labeled alternative in `SmlParser.expression`.
+	 * @param ctx the parse tree
+	 */
+	exitLambdaUnitExpression?: (ctx: LambdaUnitExpressionContext) => void;
 
 	/**
 	 * Enter a parse tree produced by the `lambdaExpression`
@@ -357,6 +389,19 @@ export interface SmlListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitLetrecDeclaration?: (ctx: LetrecDeclarationContext) => void;
+
+	/**
+	 * Enter a parse tree produced by the `functionUnitDeclaration`
+	 * labeled alternative in `SmlParser.declaration`.
+	 * @param ctx the parse tree
+	 */
+	enterFunctionUnitDeclaration?: (ctx: FunctionUnitDeclarationContext) => void;
+	/**
+	 * Exit a parse tree produced by the `functionUnitDeclaration`
+	 * labeled alternative in `SmlParser.declaration`.
+	 * @param ctx the parse tree
+	 */
+	exitFunctionUnitDeclaration?: (ctx: FunctionUnitDeclarationContext) => void;
 
 	/**
 	 * Enter a parse tree produced by the `functionDeclaration`
@@ -546,6 +591,17 @@ export interface SmlListener extends ParseTreeListener {
 	exitLetrec?: (ctx: LetrecContext) => void;
 
 	/**
+	 * Enter a parse tree produced by `SmlParser.functionUnit`.
+	 * @param ctx the parse tree
+	 */
+	enterFunctionUnit?: (ctx: FunctionUnitContext) => void;
+	/**
+	 * Exit a parse tree produced by `SmlParser.functionUnit`.
+	 * @param ctx the parse tree
+	 */
+	exitFunctionUnit?: (ctx: FunctionUnitContext) => void;
+
+	/**
 	 * Enter a parse tree produced by `SmlParser.function`.
 	 * @param ctx the parse tree
 	 */
@@ -601,6 +657,17 @@ export interface SmlListener extends ParseTreeListener {
 	exitList?: (ctx: ListContext) => void;
 
 	/**
+	 * Enter a parse tree produced by `SmlParser.lambdaUnit`.
+	 * @param ctx the parse tree
+	 */
+	enterLambdaUnit?: (ctx: LambdaUnitContext) => void;
+	/**
+	 * Exit a parse tree produced by `SmlParser.lambdaUnit`.
+	 * @param ctx the parse tree
+	 */
+	exitLambdaUnit?: (ctx: LambdaUnitContext) => void;
+
+	/**
 	 * Enter a parse tree produced by `SmlParser.lambda`.
 	 * @param ctx the parse tree
 	 */
@@ -621,6 +688,17 @@ export interface SmlListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitParentheses?: (ctx: ParenthesesContext) => void;
+
+	/**
+	 * Enter a parse tree produced by `SmlParser.applyUnit`.
+	 * @param ctx the parse tree
+	 */
+	enterApplyUnit?: (ctx: ApplyUnitContext) => void;
+	/**
+	 * Exit a parse tree produced by `SmlParser.applyUnit`.
+	 * @param ctx the parse tree
+	 */
+	exitApplyUnit?: (ctx: ApplyUnitContext) => void;
 
 	/**
 	 * Enter a parse tree produced by `SmlParser.apply`.

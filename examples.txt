@@ -2,12 +2,10 @@
 (1)
 [1, 2]
 val x = 1
-val a = fn (_) => 5 + 1
-a(())
-val rec a = fn (_) => 5 + 1
-a(())
-fun a(_) = 5 + 1
-a(())
+val a = fn () => 5 + 1
+a()
+fun a() = 5 + 1
+a()
 fun a(x) = x + 1
 a(5)
 if (x == 1) then (5) else (2)

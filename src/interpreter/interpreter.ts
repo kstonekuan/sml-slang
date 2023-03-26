@@ -268,20 +268,20 @@ export function execute(program: any) {
       try {
         microcode[cmd.tag](cmd)
       } catch (e) {
-        return display(e, "[Runtime Error] in microcode: ")
+        return display(e, "[interpreter.ts] in microcode: ")
       }
       debug(cmd, A, S, E)
     } else {
-      return display("", "[Runtime Error] unknown command: " +
+      return display("", "[interpreter.ts] unknown command: " +
         command_to_string(cmd))
     }
     i++
   }
   if (i === step_limit) {
-    return display("[Runtime Error] step limit " + stringify(step_limit) + " exceeded")
+    return display("[interpreter.ts] step limit " + stringify(step_limit) + " exceeded")
   }
   if (S.length > 1 || S.length < 1) {
-    return display(S, '[Runtime Error] stash must be singleton but is: ')
+    return display(S, '[interpreter.ts] stash must be singleton but is: ')
   }
   return display(value_to_string(S[0]))
 
