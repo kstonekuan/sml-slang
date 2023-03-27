@@ -41,9 +41,9 @@ const binop_microcode = {
     'andalso': (x, y) => x && y,
     'orelse': (x, y) => x || y,
     '::': (x, y) => pair(x, y),
-    '@': (x, y) => is_null(y)
-        ? error(y, 'cannot append to null')
-        : pair(head(y), x),
+    '@': (x, y) => is_null(x)
+        ? y
+        : pair(head(x), apply_binop('@', y, tail(x))),  // apply_binop takes in v2 first then v1
 }
 
 // v2 is popped before v1
