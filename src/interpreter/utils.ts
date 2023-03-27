@@ -61,17 +61,17 @@ const unop_microcode = {
 export const apply_unop = (op, v) => unop_microcode[op](v)
 
 export const builtin_mapping = {
-    display: display,
+    // display: display,
     //     get_time: get_time,
     // stringify: stringify,
-    error: error,
+    // error: error,
     //     prompt: prompt,
-    is_number: is_number,
-    is_string: is_string,
-    is_function: x => typeof x === 'object' &&
-        (x.tag == 'builtin' ||
-            x.tag == 'closure'),
-    is_boolean: is_boolean,
+    // is_number: is_number,
+    // is_string: is_string,
+    // is_function: x => typeof x === 'object' &&
+    //     (x.tag == 'builtin' ||
+    //         x.tag == 'closure'),
+    // is_boolean: is_boolean,
     // is_undefined: is_undefined,
     //     parse_int: parse_int,
     //     char_at: char_at,
