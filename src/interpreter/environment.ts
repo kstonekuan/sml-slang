@@ -17,7 +17,7 @@ for (const key in builtin_mapping)
         arity: arity(builtin_mapping[key])
     }
 // fill global frame with built-in constants
-global_frame.undefined = undefined
+// global_frame.undefined = undefined
 global_frame.rec = true // allow any type of function to be called from the top-level
 // global_frame.math_E = math_E
 // global_frame.math_LN10 = math_LN10
