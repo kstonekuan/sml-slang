@@ -6,7 +6,7 @@ import { RuleNode } from 'antlr4ts/tree/RuleNode'
 import { TerminalNode } from 'antlr4ts/tree/TerminalNode'
 import { display, error, head, is_null, is_undefined, pair, stringify, tail } from 'sicp'
 
-import { assign, extend, global_environment,lookup } from '../interpreter/environment'
+import { assign, extend, global_environment, lookup } from '../interpreter/environment'
 import { unassigned } from '../interpreter/utils'
 import { SmlLexer } from '../lang/SmlLexer'
 import { ApplyContext, BinopContext, BoolExpressionContext, CharExpressionContext, ExpressionListContext, IdentifierContext, IntExpressionContext, ListContext, NextPatternContext, NilListContext, RealExpressionContext, SmlParser, StringExpressionContext, UnitExpressionContext, UnopContext } from "../lang/SmlParser";
@@ -197,12 +197,14 @@ class ExpressionGenerator implements SmlVisitor<any> {
     }
 
     if (type.tag === LIST) {
-      return this.isTypeVariableInType(typeVariable, type.type)
+      return this.isTypeVariableInType(typeVariable, type.elem)
     }
 
     if (type.tag === FN) {
       return type.args.reduce((acc, arg) => acc || this.isTypeVariableInType(typeVariable, arg), false) || this.isTypeVariableInType(typeVariable, type.ret)
     }
+
+    return false
   }
 
   unifyConstraints(constraints: any[]): pair[] {
@@ -213,6 +215,10 @@ class ExpressionGenerator implements SmlVisitor<any> {
     }
 
     const [first, ...rest] = constraints
+
+    if (first.tag !== EQ) {
+      throw new Error(`TypeInference: Expected constraint of type ${EQ}, but got ${first.tag}`)
+    }
 
     if (stringify(first.frst) === stringify(first.scnd)) {
       return this.unifyConstraints(rest)
@@ -229,12 +235,12 @@ class ExpressionGenerator implements SmlVisitor<any> {
     }
 
     if (first.frst.tag === LIST && first.scnd.tag === LIST) {
-      return this.unifyConstraints([{ tag: EQ, frst: first.frst.type, scnd: first.scnd.type }, ...rest])
+      return this.unifyConstraints([{ tag: EQ, frst: first.frst.elem, scnd: first.scnd.elem }, ...rest])
     }
 
     if (first.frst.tag === FN && first.scnd.tag === FN) {
       if (first.frst.args.length !== first.scnd.args.length) {
-        throw new Error(`TypeError: Function types in constraint ${stringify(first)} must have the same number of arguments`)
+        throw new TypeError(`TypeInference: Function types in constraint ${stringify(first)} must have the same number of arguments`)
       }
       return this.unifyConstraints([
         { tag: EQ, frst: first.frst.ret, scnd: first.scnd.ret },
@@ -244,13 +250,15 @@ class ExpressionGenerator implements SmlVisitor<any> {
     }
 
     if (PRIMS.includes(first.frst.tag) && (first.frst.tag !== first.scnd.tag)) {
-      throw new Error(`TypeError: Types in constraint [${stringify(first)}] cannot be unified`)
+      throw new TypeError(`TypeInference: Types in constraint [${stringify(first)}] cannot be unified`)
     }
 
     return []
   }
 
   applySubstitution(type: any, substitution: pair): any {
+    // display(substitution, "Applying substitution: ")
+    // display(type, "to type: ")
     if (type.tag === EQ) {
       return {
         tag: EQ,
@@ -262,7 +270,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
     if (type.tag === LIST) {
       return {
         tag: LIST,
-        type: this.applySubstitution(type.type, substitution)
+        elem: this.applySubstitution(type.elem, substitution)
       }
     }
 
@@ -366,7 +374,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
 
     elems.forEach(elem => {
       if (elem.type.tag !== listType.tag) {
-        throw new Error(`TypeError: List elements must be of the same type: at ${stringify(contextToLocation(ctx))}`)
+        throw new TypeError(`TypeCheck: List elements must be of the same type: at ${stringify(contextToLocation(ctx))}`)
       }
     })
     return {
@@ -422,7 +430,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
     const expr = this.visit(ctx._value)
 
     if (expr.tag === 'lam' && expr.prms.length === 0) {
-      throw new Error(`TypeError: Letrec function cannot be a lambda with unit argument: at ${stringify(contextToLocation(ctx))}`)
+      throw new TypeError(`TypeCheck: Letrec function cannot be a lambda with unit argument: at ${stringify(contextToLocation(ctx))}`)
     }
 
     const constraints = expr.constraints
@@ -630,7 +638,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
     const right = this.visit(ctx._right)
 
     display("Here: " + operator.type.tag)
-    
+
     let type = this.freshType()
     const constraints = [...operator.constraints, ...left.constraints, ...right.constraints]
     constraints.push({
