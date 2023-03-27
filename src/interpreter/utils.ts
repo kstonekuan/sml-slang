@@ -40,7 +40,7 @@ const binop_microcode = {
     '<>': (x, y) => x !== y,
     'andalso': (x, y) => x && y,
     'orelse': (x, y) => x || y,
-    '::': (x, y) => y.unshift(x),
+    '::': (x, y) => pair(x, y),
     '@': (x, y) => is_null(y)
         ? error(y, 'cannot append to null')
         : pair(head(y), x),
@@ -204,7 +204,7 @@ export const value_to_string = x =>
             : is_builtin(x)
                 ? '<builtin: ' + x.sym + '>'
                 : is_list(x)
-                    ? stringify(list_to_arr(x.body)) + " : " + x.type.elem.tag + " list"
+                    ? stringify(list_to_arr(x.val)) + " : " + x.type.elem.tag + " list"
                     : is_lit(x)
                         ? x.val + " : " + x.type.tag
                         : stringify(x)
