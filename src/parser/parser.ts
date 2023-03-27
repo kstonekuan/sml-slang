@@ -172,8 +172,25 @@ class ExpressionGenerator implements SmlVisitor<any> {
   private letterGenerator: LetterGenerator
 
   constructor() {
-    this.E = global_environment
     this.letterGenerator = new LetterGenerator()
+
+    const hdElemType = this.freshType()
+    const tlElemType = this.freshType()
+
+    const global_frame = {
+      hd: {
+        tag: FN,
+        args: [{ tag: LIST, elem: hdElemType }],
+        ret: hdElemType,
+      },
+      tl: {
+        tag: FN,
+        args: [{ tag: LIST, elem: tlElemType }],
+        ret: { tag: LIST, elem: tlElemType },
+      }
+    }
+
+    this.E = pair(global_frame, null)
   }
 
   freshType(): any {
