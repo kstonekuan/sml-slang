@@ -168,10 +168,7 @@ const microcode = {
       push(S, { tag: 'lit', val: apply_unop(cmd.sym, S.pop().val), type: cmd.type }),
   binop_i:
     cmd => {
-      if (cmd.type.tag === 'list')    // For list construct and list concat binops
-        push(S, { tag: 'list', val: apply_binop(cmd.sym, S.pop().val, S.pop().val), type: cmd.type })
-      else 
-        push(S, { tag: 'lit', val: apply_binop(cmd.sym, S.pop().val, S.pop().val), type: cmd.type })
+      push(S, { tag: 'lit', val: apply_binop(cmd.sym, S.pop().val, S.pop().val), type: cmd.type })
     },
   pop_i:
     _ =>
@@ -184,7 +181,7 @@ const microcode = {
         args[i] = S.pop()
       const sf = S.pop()
       if (sf.tag === 'builtin')
-        return push(S, { tag: 'lit', val: apply_builtin(sf.sym, args.map(arg => arg.val)), type: cmd.type }) // TODO: return list here?
+        return push(S, { tag: 'lit', val: apply_builtin(sf.sym, args.map(arg => arg.val)), type: cmd.type })
       // remaining case: sf.tag === 'closure'
       if (A.length === 0 || peek(A).tag === 'env_i') {
         // current E not needed, tail call?
@@ -210,7 +207,7 @@ const microcode = {
         const val = S.pop().val
         list = pair(val, list)
       }
-      push(S, { tag: 'list', val: list, type: cmd.type })
+      push(S, { tag: 'lit', val: list, type: cmd.type })
     },
   local_i:
     cmd => {

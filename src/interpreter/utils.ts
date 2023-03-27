@@ -177,12 +177,14 @@ export const is_builtin = x =>
 export const is_list = x =>
     x !== null &&
     typeof x === "object" &&
-    x.tag == 'list'
+    x.tag == 'lit' &&
+    x.type.tag == 'list'
 
 export const is_lit = x =>
     x !== null &&
     typeof x === "object" &&
-    x.tag == 'lit'
+    x.tag == 'lit' &&
+    !is_list(x)
 
 export const list_to_arr = x =>
     is_null(x) ? [] : [head(x), ...list_to_arr(tail(x))]
