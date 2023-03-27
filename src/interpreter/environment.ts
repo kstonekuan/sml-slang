@@ -18,7 +18,6 @@ for (const key in builtin_mapping)
     }
 // fill global frame with built-in constants
 // global_frame.undefined = undefined
-global_frame.rec = true // allow any type of function to be called from the top-level
 // global_frame.math_E = math_E
 // global_frame.math_LN10 = math_LN10
 // global_frame.math_LN2 = math_LN2

@@ -91,7 +91,7 @@ const microcode = {
       push(A, { tag: 'assmt_i', sym: cmd.sym }, cmd.expr),
   lam:
     cmd =>
-      push(S, { tag: 'closure', prms: cmd.prms, body: cmd.body, env: extend(['rec'], [cmd.rec], E), type: cmd.type }),
+      push(S, { tag: 'closure', prms: cmd.prms, body: cmd.body, env: E, type: cmd.type }),
   arr_lit:
     cmd =>
       push(A, { tag: 'arr_lit_i', arity: cmd.elems.length, type: cmd.type }, ...cmd.elems),
@@ -122,16 +122,10 @@ const microcode = {
     },
   val:
     cmd => {
-      if (cmd.expr.tag === 'lam') {
-        cmd.expr.rec = false
-      }
       push(A, { tag: 'assmt', sym: cmd.sym, expr: cmd.expr })
     },
   letrec:
     cmd => {
-      if (cmd.expr.tag === 'lam') {
-        cmd.expr.rec = true
-      }
       push(A, { tag: 'assmt', sym: cmd.sym, expr: cmd.expr })
     },
   fun:
@@ -180,9 +174,6 @@ const microcode = {
       S.pop(),
   app_i:
     cmd => {
-      if (!lookup('rec', E)) {
-        error('recursion not allowed for a lambda defined with \'val\', use \'val rec\' or \'fun\' instead')
-      }
       const arity = cmd.arity
       const args: any[] = []
       for (let i = arity - 1; i >= 0; i--)
