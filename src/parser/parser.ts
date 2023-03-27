@@ -6,6 +6,7 @@ import { RuleNode } from 'antlr4ts/tree/RuleNode'
 import { TerminalNode } from 'antlr4ts/tree/TerminalNode'
 import { display, error, head, is_null, is_undefined, pair, stringify, tail } from 'sicp'
 
+import { debug } from '../interpreter/debug'
 import { assign, extend, global_environment, lookup } from '../interpreter/environment'
 import { unassigned } from '../interpreter/utils'
 import { SmlLexer } from '../lang/SmlLexer'
@@ -354,6 +355,8 @@ class ExpressionGenerator implements SmlVisitor<any> {
   }
   visitIdentifier(ctx: IdentifierContext): any {
     // env |- n : env(n) -| {}
+    display(ctx.text, "Indentifier -> text: ")
+    // debug({ tag: 'debug' }, [], [], this.E)
     const sym = ctx.text
     return {
       tag: 'nam',
@@ -637,8 +640,6 @@ class ExpressionGenerator implements SmlVisitor<any> {
     const left = this.visit(ctx._left)
     const right = this.visit(ctx._right)
 
-    display("Here: " + operator.type.tag)
-
     let type = this.freshType()
     const constraints = [...operator.constraints, ...left.constraints, ...right.constraints]
     constraints.push({
@@ -722,7 +723,6 @@ class ExpressionGenerator implements SmlVisitor<any> {
   }
   visitListConstructBinop(ctx: ListConstructBinopContext): any {
     const listType = this.freshType()
-
     return {
       sym: ctx.text,
       type: {
@@ -844,8 +844,11 @@ class ExpressionGenerator implements SmlVisitor<any> {
     }
   }
   visitLetBlockExpression(ctx: LetBlockExpressionContext): any {
+    const originalEnv = this.E
+    this.E = extend([], [], this.E)
     const elems = ctx._declarations.map(element => this.visit(element))
     const expr = this.visit(ctx._body)
+    this.E = originalEnv
     return {
       tag: 'let',
       declarations: elems,

@@ -21,3 +21,18 @@ val a = 1
 case a of 0 => "ze" ^ "ro"
 | 1 => "o" ^ "ne"
 | 2 => "tw" ^ "o"
+
+let val a = 1 in
+  let fun f(x) = x+a in
+     let val a = 3 in
+      f(4)
+     end
+  end
+end
+
+local
+    val pi = 3.14
+    val pi = pi +. 1.0
+in
+    val pi2 = 2.0 *. pi
+end
