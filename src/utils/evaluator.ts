@@ -218,7 +218,9 @@ export const value_to_string = x =>
                                         ? value_to_string(x.elem) + " list"
                                         : x.args.map(value_to_string).join(' * ') + ' -> ' + value_to_string(x.ret) // FN
                             )
-                            : stringify(x)
+                            : is_type_variable(x)
+                                ? x.tag
+                                : stringify(x)
 
 export const INT = 'int'
 export const REAL = 'real'
@@ -230,9 +232,13 @@ export const PRIMS = [INT, REAL, STRING, CHAR, BOOL, UNIT]
 export const LIST = 'list'
 export const FN = 'fn'
 export const EQ = 'eq'
-export const TYPES = [...PRIMS, FN, LIST]
 
-export const is_type = (t) => TYPES.includes(t.tag)
+export const is_type = (t) => [...PRIMS, FN, LIST].includes(t.tag)
+
+
+export const is_type_variable = (type: any): boolean => {
+    return type.tag[0] === "'"
+}
 
 export class LetterGenerator {
     private newLetter: NewLetter

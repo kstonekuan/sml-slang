@@ -54,7 +54,7 @@ import { ListConcatBinopContext } from "../lang/SmlParser";
 import { SmlVisitor } from '../lang/SmlVisitor'
 import { Context, ErrorSeverity, ErrorType, SourceError } from '../types'
 import { declaration } from '../utils/astCreator'
-import { BOOL, CHAR, EQ, FN, INT, LetterGenerator, LIST, PRIMS, REAL, STRING, UNIT } from '../utils/evaluator'
+import { BOOL, CHAR, EQ, FN, INT, is_type_variable, LetterGenerator, LIST, PRIMS, REAL, STRING, UNIT } from '../utils/evaluator'
 import { stripIndent } from '../utils/formatters'
 import { binaryOp } from '../utils/operators'
 
@@ -190,13 +190,9 @@ class ExpressionGenerator implements SmlVisitor<any> {
   }
 
   recycleTypeVariableFromSubstitution(substitution: pair): void {
-    if (this.isTypeVariable(tail(substitution))) {
+    if (is_type_variable(tail(substitution))) {
       this.letterGenerator.recycle(tail(substitution).tag.slice(1))
     }
-  }
-
-  isTypeVariable(type: any): boolean {
-    return type.tag[0] === "'"
   }
 
   isTypeVariableInType(typeVariable: any, type: any): boolean {
@@ -232,12 +228,12 @@ class ExpressionGenerator implements SmlVisitor<any> {
       return this.unifyConstraints(rest)
     }
 
-    if (this.isTypeVariable(first.frst) && !this.isTypeVariableInType(first.frst, first.scnd)) {
+    if (is_type_variable(first.frst) && !this.isTypeVariableInType(first.frst, first.scnd)) {
       const substitution = pair(first.scnd, first.frst)
       return [substitution, ...this.unifyConstraints(rest.map(constraint => this.applySubstitution(constraint, substitution)))]
     }
 
-    if (this.isTypeVariable(first.scnd) && !this.isTypeVariableInType(first.scnd, first.frst)) {
+    if (is_type_variable(first.scnd) && !this.isTypeVariableInType(first.scnd, first.frst)) {
       const substitution = pair(first.frst, first.scnd)
       return [substitution, ...this.unifyConstraints(rest.map(constraint => this.applySubstitution(constraint, substitution)))]
     }
