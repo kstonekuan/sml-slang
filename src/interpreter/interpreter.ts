@@ -2,9 +2,9 @@
 import { display, error, head, pair, stringify, tail } from 'sicp'
 
 import { Context } from '../types'
+import { apply_binop, apply_builtin, apply_unop, peek, push, unassigned, value_to_string } from '../utils/evaluator'
 import { command_to_string, debug } from './debug'
 import { assign, extend, global_environment, handle_sequence, lookup, scan } from './environment'
-import { apply_binop, apply_builtin, apply_unop, peek, push, unassigned, value_to_string } from './utils'
 
 /* **************************
  * interpreter configurations

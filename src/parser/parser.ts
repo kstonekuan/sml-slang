@@ -8,7 +8,6 @@ import { display, error, head, is_null, is_undefined, pair, stringify, tail } fr
 
 import { debug } from '../interpreter/debug'
 import { assign, extend, global_environment, lookup } from '../interpreter/environment'
-import { unassigned } from '../interpreter/utils'
 import { SmlLexer } from '../lang/SmlLexer'
 import { ApplyContext, BinopContext, BoolExpressionContext, CharExpressionContext, ExpressionListContext, IdentifierContext, IntExpressionContext, ListContext, NextPatternContext, NilListContext, RealExpressionContext, SmlParser, StringExpressionContext, UnitExpressionContext, UnopContext } from "../lang/SmlParser";
 import { ApplyUnitContext } from '../lang/SmlParser'
@@ -55,9 +54,9 @@ import { ListConcatBinopContext } from "../lang/SmlParser";
 import { SmlVisitor } from '../lang/SmlVisitor'
 import { Context, ErrorSeverity, ErrorType, SourceError } from '../types'
 import { declaration } from '../utils/astCreator'
+import { BOOL, CHAR, EQ, FN, INT, LetterGenerator, LIST, PRIMS, REAL, STRING, UNIT } from '../utils/evaluator'
 import { stripIndent } from '../utils/formatters'
 import { binaryOp } from '../utils/operators'
-import { LetterGenerator } from './utils'
 
 export class DisallowedConstructError implements SourceError {
   public type = ErrorType.SYNTAX
@@ -157,16 +156,7 @@ function contextToLocation(ctx: ExpressionContext): any {
   }
 }
 
-const INT = 'int'
-const REAL = 'real'
-const STRING = 'string'
-const CHAR = 'char'
-const BOOL = 'bool'
-const UNIT = 'unit'
-const PRIMS = [INT, REAL, STRING, CHAR, BOOL, UNIT]
-const LIST = 'list'
-const FN = 'fn'
-const EQ = 'eq'
+
 class ExpressionGenerator implements SmlVisitor<any> {
   private E: pair // type environment
   private letterGenerator: LetterGenerator

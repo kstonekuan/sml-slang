@@ -1,6 +1,6 @@
 import { display, for_each, head, is_null, pair, stringify, tail } from 'sicp'
 
-import { is_builtin, is_closure, is_list, list_to_arr, value_to_string } from './utils'
+import { is_builtin, is_closure, is_list, list_to_arr, value_to_string } from '../utils/evaluator'
 
 /* *********
  * debugging

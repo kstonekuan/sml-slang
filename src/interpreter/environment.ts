@@ -1,6 +1,6 @@
 import { arity, error, head, is_null, pair, tail } from 'sicp';
 
-import { builtin_mapping, is_unassigned, unassigned } from './utils'
+import { builtin_mapping, is_unassigned, unassigned } from '../utils/evaluator'
 
 /* ************
  * environments

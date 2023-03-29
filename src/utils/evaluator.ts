@@ -1,6 +1,7 @@
 import { type } from 'os';
 import { display, error, head, is_boolean, is_null, is_number, is_string, pair, stringify, tail } from 'sicp';
 
+
 /* **********************
  * using arrays as stacks
  * **********************/
@@ -202,11 +203,92 @@ export const value_to_string = x =>
     is_unassigned(x)
         ? '<unassigned>'
         : is_closure(x)
-            ? 'fn : ' + x.type.args.map(x => x.tag).join(' * ') + ' -> ' + x.type.ret.tag
+            ? 'fn : ' + value_to_string(x.type)
             : is_builtin(x)
                 ? '<builtin: ' + x.sym + '>'
                 : is_list(x)
-                    ? stringify(list_to_arr(x.val)) + " : " + x.type.elem.tag + " list"
+                    ? stringify(list_to_arr(x.val)) + " : " + value_to_string(x.type)
                     : is_lit(x)
-                        ? x.val + " : " + x.type.tag
-                        : stringify(x)
+                        ? x.val + " : " + value_to_string(x.type)
+                        : is_type(x)
+                            ? (
+                                PRIMS.includes(x.tag)
+                                    ? x.tag
+                                    : x.tag == LIST
+                                        ? value_to_string(x.elem) + " list"
+                                        : x.args.map(value_to_string).join(' * ') + ' -> ' + value_to_string(x.ret) // FN
+                            )
+                            : stringify(x)
+
+export const INT = 'int'
+export const REAL = 'real'
+export const STRING = 'string'
+export const CHAR = 'char'
+export const BOOL = 'bool'
+export const UNIT = 'unit'
+export const PRIMS = [INT, REAL, STRING, CHAR, BOOL, UNIT]
+export const LIST = 'list'
+export const FN = 'fn'
+export const EQ = 'eq'
+export const TYPES = [...PRIMS, FN]
+
+export const is_type = (t) => TYPES.includes(t.tag)
+
+export class LetterGenerator {
+    private newLetter: NewLetter
+    private letters: string[]
+
+    constructor() {
+        this.letters = []
+        this.newLetter = new NewLetter()
+    }
+
+    generate(): string {
+        if (this.letters.length === 0) {
+            this.letters.push(this.newLetter.get())
+        }
+        // remove and return the next available letter
+        return this.letters.shift()
+    }
+
+    recycle(letter: string) {
+        if (!/^[a-z]+$/.test(letter)) {
+            throw new Error('Invalid letter to recycle.')
+        }
+        // add the recycled letter back to the letters array
+        this.letters.push(letter)
+        this.letters.sort()
+    }
+}
+
+class NewLetter {
+    private alphabet: string
+    private index1: number
+    private index2: number
+
+    constructor() {
+        this.alphabet = 'abcdefghijklmnopqrstuvwxyz'
+        this.index1 = -1
+        this.index2 = -1
+    }
+
+    get() {
+        this.index2++
+
+        // If we've reached the end of the alphabet, reset index2 to 0 and increment index1
+        if (this.index2 >= this.alphabet.length) {
+            this.index2 = 0
+            this.index1++
+        }
+
+        // If we've reached the end of the alphabet again, reset both indices to 0
+        if (this.index1 >= this.alphabet.length) {
+            throw new Error('No more letters available.')
+        }
+
+        const letter1 = this.index1 < 0 ? '' : this.alphabet[this.index1]
+        const letter2 = this.alphabet[this.index2]
+        return letter1 + letter2
+    }
+}
+
