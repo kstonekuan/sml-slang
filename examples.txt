@@ -36,3 +36,8 @@ local
 in
     val pi2 = 2.0 *. pi
 end
+
+
+val f = fn(x) => fn (y) => x + y
+val g = f(1)
+g(5)
