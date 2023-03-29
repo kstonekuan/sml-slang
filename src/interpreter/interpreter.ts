@@ -190,6 +190,7 @@ const microcode = {
         // push current environment
         push(A, { tag: 'env_i', env: E })
       }
+      sf.body.type = cmd.type // Override builtin types in body
       push(A, sf.body)
       E = extend(sf.prms, args, sf.env)
     },
