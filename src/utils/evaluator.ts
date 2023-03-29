@@ -230,7 +230,7 @@ export const PRIMS = [INT, REAL, STRING, CHAR, BOOL, UNIT]
 export const LIST = 'list'
 export const FN = 'fn'
 export const EQ = 'eq'
-export const TYPES = [...PRIMS, FN]
+export const TYPES = [...PRIMS, FN, LIST]
 
 export const is_type = (t) => TYPES.includes(t.tag)
 
