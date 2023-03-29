@@ -862,14 +862,24 @@ class ExpressionGenerator implements SmlVisitor<any> {
     }
   }
   visitLocalBlockDeclaration(ctx: LocalBlockDeclarationContext): any {
+    const originalEnv = this.E
+    this.E = extend([], [], this.E)
     const locals = ctx._declarations.map(declaration => this.visit(declaration))
     const globals = ctx._body.map(declaration => this.visit(declaration))
+    // display(globals, "[parser.ts] LocalBlockDeclaration -> globals: ")
+    this.E = originalEnv
+    for (const global of globals) {
+      if (['val', 'fun', 'letrec'].includes(global.tag)) {
+        display(global.sym, "[parser.ts] LocalBlockDeclaration -> global.sym: ")
+        head(this.E)[global.sym] = global.type
+      }
+    }
     return {
       tag: 'local',
       locals: locals,
       globals: globals,
       // TODO
-      type: undefined,
+      type: globals.at(-1).type,
       constraints: [],
     }
   }
