@@ -859,7 +859,6 @@ class ExpressionGenerator implements SmlVisitor<any> {
       tag: 'let',
       declarations: elems,
       expr: expr,
-      // TODO
       type: expr.type,
       constraints: expr.constraints,
     }
@@ -881,7 +880,6 @@ class ExpressionGenerator implements SmlVisitor<any> {
       tag: 'local',
       locals: locals,
       globals: globals,
-      // TODO
       type: globals.at(-1).type,
       constraints: [],
     }
@@ -892,6 +890,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
     //   and env |- e1 : t1 -| C1
     //   and env |- e2 : t2 -| C2
     //   and env |- e3 : t3 -| C3
+    const val = this.visit(ctx._value)
     const pats = ctx._otherPatterns.map(pat => this.visit(pat))
     pats.unshift({ case: this.visit(ctx._firstCase), result: this.visit(ctx._firstResult) })
     pats.forEach(pat => display(pat, "LOL: "))
@@ -902,18 +901,17 @@ class ExpressionGenerator implements SmlVisitor<any> {
     // then for bool check if true and false is already in and theres no other, else throw an error
 
     let type = this.freshType()
-    const constraints = [...pats.map(pat => pat.case.constraints).flat(), ...pats.map(pat => pat.result.constraints).flat()]
-    pats.forEach(pat => constraints.push({ tag: EQ, frst: type, scnd: pat.result.type }))
+    const constraints = pats.map(pat => [...pat.case.constraints, ...pat.result.constraints]).flat()
+    pats.forEach(pat => constraints.push({ tag: EQ, frst: type, scnd: pat.result.type }, { tag: EQ, frst: val.type, scnd: pat.case.type }))
 
     const substitutions = this.unifyConstraints(constraints)
     substitutions.forEach(sub => type = this.applySubstitution(type, sub))
 
     return {
       tag: 'pat_match',
-      val: this.visit(ctx._value),
+      val: val,
       cases: pats.map(pat => pat.case).reverse(),
       results: pats.map(pat => pat.result),
-      // TODO
       type: type,
       constraints: constraints,
     }
@@ -929,9 +927,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
       case: {
         tag: 'lit',
         val: '_',
-        type: {
-          tag: CHAR,
-        },
+        type: this.freshType(),
         constraints: [],
       },
       result: this.visit(ctx._wildCardResult),
