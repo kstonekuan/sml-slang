@@ -146,16 +146,21 @@ const microcode = {
     cmd => {
       const arity = cmd.results.length
       const cases: any[] = []
-      for (let i = arity - 1; i >= 0; i--)
+      let i = 0
+      if (arity > 1)  // if arity is 1, then there is only wildcard case, keep i as 0 
+        i = arity - 2 // skip wildcard case
+      S.pop() // pop off wildcard case as there is no comparison to be made for it
+      for (i; i >= 0; i--)
         cases[i] = S.pop().val
       const val = S.pop().val
-      for (let i = 0; i < arity; i++) {
+      for (let i = 0; i < arity-1; i++) {   // check all cases except wildcard
         if (cases[i] === val) {
           push(A, cmd.results[i])
           return
         }
       }
-      push(S, undefined) // TODO: should not be able to have undefined, throw error if there is no wildcard or variable pattern
+      // Add wildcard result if reach here
+      push(A, cmd.results[arity-1]) // TODO: should not be able to have undefined, throw error if there is no wildcard or variable pattern
     },
   assmt_i:
     // peek top of stash without popping:

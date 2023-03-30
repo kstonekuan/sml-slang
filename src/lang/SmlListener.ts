@@ -31,6 +31,8 @@ import { LetrecDeclarationContext } from "./SmlParser";
 import { FunctionUnitDeclarationContext } from "./SmlParser";
 import { FunctionDeclarationContext } from "./SmlParser";
 import { LocalBlockDeclarationContext } from "./SmlParser";
+import { NextPatternContext } from "./SmlParser";
+import { WildCardPatternContext } from "./SmlParser";
 import { DeclarationStatementContext } from "./SmlParser";
 import { ExpressionStatementContext } from "./SmlParser";
 import { CompareBinopContext } from "./SmlParser";
@@ -56,8 +58,8 @@ import { ParenthesesContext } from "./SmlParser";
 import { ApplyUnitContext } from "./SmlParser";
 import { ApplyContext } from "./SmlParser";
 import { IdentifierContext } from "./SmlParser";
+import { OtherPatternContext } from "./SmlParser";
 import { ExpressionContext } from "./SmlParser";
-import { NextPatternContext } from "./SmlParser";
 
 
 /**
@@ -430,6 +432,32 @@ export interface SmlListener extends ParseTreeListener {
 	exitLocalBlockDeclaration?: (ctx: LocalBlockDeclarationContext) => void;
 
 	/**
+	 * Enter a parse tree produced by the `nextPattern`
+	 * labeled alternative in `SmlParser.otherPattern`.
+	 * @param ctx the parse tree
+	 */
+	enterNextPattern?: (ctx: NextPatternContext) => void;
+	/**
+	 * Exit a parse tree produced by the `nextPattern`
+	 * labeled alternative in `SmlParser.otherPattern`.
+	 * @param ctx the parse tree
+	 */
+	exitNextPattern?: (ctx: NextPatternContext) => void;
+
+	/**
+	 * Enter a parse tree produced by the `wildCardPattern`
+	 * labeled alternative in `SmlParser.otherPattern`.
+	 * @param ctx the parse tree
+	 */
+	enterWildCardPattern?: (ctx: WildCardPatternContext) => void;
+	/**
+	 * Exit a parse tree produced by the `wildCardPattern`
+	 * labeled alternative in `SmlParser.otherPattern`.
+	 * @param ctx the parse tree
+	 */
+	exitWildCardPattern?: (ctx: WildCardPatternContext) => void;
+
+	/**
 	 * Enter a parse tree produced by the `declarationStatement`
 	 * labeled alternative in `SmlParser.statement`.
 	 * @param ctx the parse tree
@@ -723,6 +751,17 @@ export interface SmlListener extends ParseTreeListener {
 	exitIdentifier?: (ctx: IdentifierContext) => void;
 
 	/**
+	 * Enter a parse tree produced by `SmlParser.otherPattern`.
+	 * @param ctx the parse tree
+	 */
+	enterOtherPattern?: (ctx: OtherPatternContext) => void;
+	/**
+	 * Exit a parse tree produced by `SmlParser.otherPattern`.
+	 * @param ctx the parse tree
+	 */
+	exitOtherPattern?: (ctx: OtherPatternContext) => void;
+
+	/**
 	 * Enter a parse tree produced by `SmlParser.expression`.
 	 * @param ctx the parse tree
 	 */
@@ -732,16 +771,5 @@ export interface SmlListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitExpression?: (ctx: ExpressionContext) => void;
-
-	/**
-	 * Enter a parse tree produced by `SmlParser.nextPattern`.
-	 * @param ctx the parse tree
-	 */
-	enterNextPattern?: (ctx: NextPatternContext) => void;
-	/**
-	 * Exit a parse tree produced by `SmlParser.nextPattern`.
-	 * @param ctx the parse tree
-	 */
-	exitNextPattern?: (ctx: NextPatternContext) => void;
 }
 

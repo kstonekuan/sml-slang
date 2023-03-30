@@ -31,6 +31,8 @@ import { LetrecDeclarationContext } from "./SmlParser";
 import { FunctionUnitDeclarationContext } from "./SmlParser";
 import { FunctionDeclarationContext } from "./SmlParser";
 import { LocalBlockDeclarationContext } from "./SmlParser";
+import { NextPatternContext } from "./SmlParser";
+import { WildCardPatternContext } from "./SmlParser";
 import { DeclarationStatementContext } from "./SmlParser";
 import { ExpressionStatementContext } from "./SmlParser";
 import { CompareBinopContext } from "./SmlParser";
@@ -56,8 +58,8 @@ import { ParenthesesContext } from "./SmlParser";
 import { ApplyUnitContext } from "./SmlParser";
 import { ApplyContext } from "./SmlParser";
 import { IdentifierContext } from "./SmlParser";
+import { OtherPatternContext } from "./SmlParser";
 import { ExpressionContext } from "./SmlParser";
-import { NextPatternContext } from "./SmlParser";
 
 
 /**
@@ -293,6 +295,22 @@ export interface SmlVisitor<Result> extends ParseTreeVisitor<Result> {
 	visitLocalBlockDeclaration?: (ctx: LocalBlockDeclarationContext) => Result;
 
 	/**
+	 * Visit a parse tree produced by the `nextPattern`
+	 * labeled alternative in `SmlParser.otherPattern`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitNextPattern?: (ctx: NextPatternContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by the `wildCardPattern`
+	 * labeled alternative in `SmlParser.otherPattern`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitWildCardPattern?: (ctx: WildCardPatternContext) => Result;
+
+	/**
 	 * Visit a parse tree produced by the `declarationStatement`
 	 * labeled alternative in `SmlParser.statement`.
 	 * @param ctx the parse tree
@@ -477,17 +495,17 @@ export interface SmlVisitor<Result> extends ParseTreeVisitor<Result> {
 	visitIdentifier?: (ctx: IdentifierContext) => Result;
 
 	/**
+	 * Visit a parse tree produced by `SmlParser.otherPattern`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitOtherPattern?: (ctx: OtherPatternContext) => Result;
+
+	/**
 	 * Visit a parse tree produced by `SmlParser.expression`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	visitExpression?: (ctx: ExpressionContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `SmlParser.nextPattern`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitNextPattern?: (ctx: NextPatternContext) => Result;
 }
 
