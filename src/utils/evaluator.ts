@@ -209,7 +209,13 @@ export const value_to_string = x =>
                 : is_list(x)
                     ? stringify(list_to_arr(x.val)) + " : " + value_to_string(x.type)
                     : is_lit(x)
-                        ? x.val + " : " + value_to_string(x.type)
+                        ? (
+                            x.type.tag == 'char'
+                                ? "#'" + x.val + "' : " + value_to_string(x.type)
+                                : x.type.tag == 'string'
+                                    ? "'" + x.val + "' : " + value_to_string(x.type)
+                                    : x.val + " : " + value_to_string(x.type)
+                        )
                         : is_type(x)
                             ? (
                                 PRIMS.includes(x.tag)
