@@ -1253,7 +1253,7 @@ export class SmlParser extends Parser {
 				this.state = 210;
 				this.match(SmlParser.CASE);
 				this.state = 211;
-				(_localctx as PatternMatchExpressionContext)._value = this.identifier();
+				(_localctx as PatternMatchExpressionContext)._value = this.expression(0);
 				this.state = 212;
 				this.match(SmlParser.OF);
 				this.state = 213;
@@ -1434,7 +1434,7 @@ export class SmlParser extends Parser {
 		"\x02\xCD\xCE\x03\x02\x02\x02\xCE\xCC\x03\x02\x02\x02\xCE\xCF\x03\x02\x02" +
 		"\x02\xCF\xD0\x03\x02\x02\x02\xD0\xD1\x07\b\x02\x02\xD1\xD2\x05$\x13\x02" +
 		"\xD2\xD3\x07\t\x02\x02\xD3\xE1\x03\x02\x02\x02\xD4\xD5\x07\x11\x02\x02" +
-		"\xD5\xD6\x05 \x11\x02\xD6\xD7\x07\x12\x02\x02\xD7\xD8\x05$\x13\x02\xD8" +
+		"\xD5\xD6\x05$\x13\x02\xD6\xD7\x07\x12\x02\x02\xD7\xD8\x05$\x13\x02\xD8" +
 		"\xD9\x07\f\x02\x02\xD9\xDD\x05$\x13\x02\xDA\xDC\x05\"\x12\x02\xDB\xDA" +
 		"\x03\x02\x02\x02\xDC\xDF\x03\x02\x02\x02\xDD\xDB\x03\x02\x02\x02\xDD\xDE" +
 		"\x03\x02\x02\x02\xDE\xE1\x03\x02\x02\x02\xDF\xDD\x03\x02\x02\x02\xE0\xB2" +
@@ -3179,7 +3179,7 @@ export class LetBlockExpressionContext extends ExpressionContext {
 	}
 }
 export class PatternMatchExpressionContext extends ExpressionContext {
-	public _value!: IdentifierContext;
+	public _value!: ExpressionContext;
 	public _firstCase!: ExpressionContext;
 	public _firstResult!: ExpressionContext;
 	public _otherPattern!: OtherPatternContext;
@@ -3187,9 +3187,6 @@ export class PatternMatchExpressionContext extends ExpressionContext {
 	public CASE(): TerminalNode { return this.getToken(SmlParser.CASE, 0); }
 	public OF(): TerminalNode { return this.getToken(SmlParser.OF, 0); }
 	public DOUBLE_ARROW(): TerminalNode { return this.getToken(SmlParser.DOUBLE_ARROW, 0); }
-	public identifier(): IdentifierContext {
-		return this.getRuleContext(0, IdentifierContext);
-	}
 	public expression(): ExpressionContext[];
 	public expression(i: number): ExpressionContext;
 	public expression(i?: number): ExpressionContext | ExpressionContext[] {
