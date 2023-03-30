@@ -180,7 +180,7 @@ expression:
 	| left = expression operator = binop right = expression			# binaryOperatorExpression
 	| operator = unop expr = expression								# unaryOperatorExpression
 	| LET (declarations += declaration)+ IN body = expression END	# letBlockExpression
-	| CASE value = identifier OF firstCase = expression DOUBLE_ARROW firstResult = expression (
+	| CASE value = expression OF firstCase = expression DOUBLE_ARROW firstResult = expression (
 		otherPatterns += otherPattern
 	)* # patternMatchExpression;
 // | name = IDENTIFIER DOT attribute = IDENTIFIER # structAttributeExpression; TODO accessing a
