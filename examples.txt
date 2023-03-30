@@ -25,11 +25,10 @@ case a of 0 => "ze" ^ "ro"
 | _ => "not 0, 1 or 2"
 intToString(a)
 
-
 let val a = 1 in
-  let fun f(x) = x+a in
+  let fun f(x) = x+1 in
      let val a = 3 in
-      f(4)
+      f(a)
      end
   end
 end

@@ -159,6 +159,7 @@ function contextToLocation(ctx: ExpressionContext): any {
 
 class ExpressionGenerator implements SmlVisitor<any> {
   private E: pair // type environment
+  private global_environment: pair
   private letterGenerator: LetterGenerator
 
   constructor() {
@@ -180,7 +181,9 @@ class ExpressionGenerator implements SmlVisitor<any> {
       }
     }
 
-    this.E = pair(global_frame, null)
+    this.global_environment = pair(global_frame, null)
+
+    this.E = pair(global_environment, null)
   }
 
   freshType(): any {
@@ -432,7 +435,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
     // Support recursive functions
     let type = this.freshType()
     const originalEnv = this.E
-    this.E = extend([sym], [type], this.E)
+    this.E = extend([sym], [type], this.global_environment)
     const expr = this.visit(ctx._value)
 
     if (expr.tag === 'lam' && expr.prms.length === 0) {
@@ -474,7 +477,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
     // Support recursive functions
     let type = this.freshType()
     const originalEnv = this.E
-    this.E = extend([...prms, sym], [...prmsTypes, type], this.E)
+    this.E = extend([...prms, sym], [...prmsTypes, type], this.global_environment)
     const body = this.visit(ctx._body)
 
     const constraints = body.constraints
@@ -890,14 +893,14 @@ class ExpressionGenerator implements SmlVisitor<any> {
     //   and env |- e2 : t2 -| C2
     //   and env |- e3 : t3 -| C3
     const pats = ctx._otherPatterns.map(pat => this.visit(pat))
-    pats.unshift({ case: this.visit(ctx._firstCase), result: this.visit(ctx._firstResult) })  
+    pats.unshift({ case: this.visit(ctx._firstCase), result: this.visit(ctx._firstResult) })
     pats.forEach(pat => display(pat, "LOL: "))
 
     if (pats[pats.length - 1].case.val !== '_') {    // Check if Pats last element is a wildcard or not, and enforce that it is
       throw new SyntaxError("Wildcard not last pattern")
     }
     // then for bool check if true and false is already in and theres no other, else throw an error
-    
+
     let type = this.freshType()
     const constraints = [...pats.map(pat => pat.case.constraints).flat(), ...pats.map(pat => pat.result.constraints).flat()]
     pats.forEach(pat => constraints.push({ tag: EQ, frst: type, scnd: pat.result.type }))
@@ -923,7 +926,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
   }
   visitWildCardPattern(ctx: WildCardPatternContext): any {
     return {
-      case: {      
+      case: {
         tag: 'lit',
         val: '_',
         type: {
@@ -942,6 +945,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
   visitExpression?(ctx: ExpressionContext): any | undefined
   visitStart(ctx: StartContext): any {
     // display(ctx._statements, "[parser.ts] StartContext -> _statements: ")
+    this.E = extend([], [], this.E)
     return ctx._statements.map(statement => this.visit(statement))
   }
   visitStatement?(ctx: StatementContext): any | undefined
