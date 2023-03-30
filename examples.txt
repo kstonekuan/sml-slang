@@ -17,10 +17,14 @@ f(5)
 val rec f = fn (x, acc) => if (x == 0) then (acc) else (f(x-1, acc+x))
 f(5,0)
 
-val a = 1
+val a = 2
+fun intToString(a) = 
 case a of 0 => "ze" ^ "ro"
 | 1 => "o" ^ "ne"
-| 2 => "tw" ^ "o"
+| 2 => "two"
+| _ => "not 0, 1 or 2"
+intToString(a)
+
 
 let val a = 1 in
   let fun f(x) = x+a in

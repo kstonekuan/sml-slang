@@ -19,6 +19,7 @@ ELSE: 'else';
 CASE: 'case';
 OF: 'of';
 NEXT_PATTERN: '|';
+WILD_CARD_PATTERN: '_';
 ASSIGN: '=';
 
 // TYPE_INT: 'int'; TYPE_REAL: 'real'; TYPE_STRING: 'string'; TYPE_CHAR: 'char'; TYPE_BOOL: 'bool';
@@ -154,6 +155,11 @@ apply:
 
 identifier: IDENTIFIER;
 
+// abstracted out of patternMatchExpression
+otherPattern:
+	NEXT_PATTERN nextCase = expression DOUBLE_ARROW nextResult = expression		# nextPattern
+	| NEXT_PATTERN WILD_CARD_PATTERN DOUBLE_ARROW wildCardResult = expression	# wildCardPattern;
+
 expression:
 	body = applyUnit		# applyUnitExpression
 	| body = apply			# applyExpression
@@ -175,14 +181,10 @@ expression:
 	| operator = unop expr = expression								# unaryOperatorExpression
 	| LET (declarations += declaration)+ IN body = expression END	# letBlockExpression
 	| CASE value = identifier OF firstCase = expression DOUBLE_ARROW firstResult = expression (
-		otherPatterns += nextPattern
+		otherPatterns += otherPattern
 	)* # patternMatchExpression;
 // | name = IDENTIFIER DOT attribute = IDENTIFIER # structAttributeExpression; TODO accessing a
 // struct’s attribute
-
-// abstracted out of patternMatchExpression
-nextPattern:
-	NEXT_PATTERN nextCase = expression DOUBLE_ARROW nextResult = expression;
 
 // type: // TODO TYPE_INT | TYPE_REAL | TYPE_BOOL | TYPE_UNIT | TYPE_STRING | TYPE_CHAR | type
 // TYPE_LIST // list | type MUL type // tuple | type SINGLE_ARROW type // function | '(' type ')';
@@ -199,4 +201,3 @@ nextPattern:
 
 // functorDef: // TODO FUNCTOR name = IDENTIFIER '(' structName = IDENTIFIER COLON sigName =
 // IDENTIFIER ')' ASSIGN structBlock;
-

@@ -9,7 +9,7 @@ import { display, error, head, is_null, is_undefined, pair, stringify, tail } fr
 import { debug } from '../interpreter/debug'
 import { assign, extend, global_environment, lookup } from '../interpreter/environment'
 import { SmlLexer } from '../lang/SmlLexer'
-import { ApplyContext, BinopContext, BoolExpressionContext, CharExpressionContext, ExpressionListContext, IdentifierContext, IntExpressionContext, ListContext, NextPatternContext, NilListContext, RealExpressionContext, SmlParser, StringExpressionContext, UnitExpressionContext, UnopContext } from "../lang/SmlParser";
+import { ApplyContext, BinopContext, BoolExpressionContext, CharExpressionContext, ExpressionListContext, IdentifierContext, IntExpressionContext, ListContext, NextPatternContext, NilListContext, OtherPatternContext, RealExpressionContext, SmlParser, StringExpressionContext, UnitExpressionContext, UnopContext, WildCardPatternContext } from "../lang/SmlParser";
 import { ApplyUnitContext } from '../lang/SmlParser'
 import { IdentifierExpressionContext } from "../lang/SmlParser";
 import { ListExpressionContext } from "../lang/SmlParser";
@@ -890,8 +890,14 @@ class ExpressionGenerator implements SmlVisitor<any> {
     //   and env |- e2 : t2 -| C2
     //   and env |- e3 : t3 -| C3
     const pats = ctx._otherPatterns.map(pat => this.visit(pat))
-    pats.unshift({ tag: 'pat', case: this.visit(ctx._firstCase), result: this.visit(ctx._firstResult) })
+    pats.unshift({ case: this.visit(ctx._firstCase), result: this.visit(ctx._firstResult) })  
+    pats.forEach(pat => display(pat, "LOL: "))
 
+    if (pats[pats.length - 1].case.val !== '_') {    // Check if Pats last element is a wildcard or not, and enforce that it is
+      throw new SyntaxError("Wildcard not last pattern")
+    }
+    // then for bool check if true and false is already in and theres no other, else throw an error
+    
     let type = this.freshType()
     const constraints = [...pats.map(pat => pat.case.constraints).flat(), ...pats.map(pat => pat.result.constraints).flat()]
     pats.forEach(pat => constraints.push({ tag: EQ, frst: type, scnd: pat.result.type }))
@@ -915,7 +921,20 @@ class ExpressionGenerator implements SmlVisitor<any> {
       result: this.visit(ctx._nextResult),
     }
   }
-
+  visitWildCardPattern(ctx: WildCardPatternContext): any {
+    return {
+      case: {      
+        tag: 'lit',
+        val: '_',
+        type: {
+          tag: CHAR,
+        },
+        constraints: [],
+      },
+      result: this.visit(ctx._wildCardResult),
+    }
+  }
+  visitOtherPattern?: (ctx: OtherPatternContext) => any;
   visitDeclarationStatement(ctx: DeclarationStatementContext): any {
     return this.visit(ctx._body)
   }
