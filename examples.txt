@@ -11,11 +11,16 @@ a(5)
 if (x == 1) then (5) else (2)
 
 fun f (x) = if (x == 0) then (x) else (x + f(x-1))
-val rec f = fn (x) => if (x == 0) then (x) else (x + f(x-1))
-f(5)
 
-val rec f = fn (x, acc) => if (x == 0) then (acc) else (f(x-1, acc+x))
-f(5,0)
+val rec factorial = fn(x) => if (x <= 1)
+                                then (1)
+                                else (x * factorial(x - 1))
+factorial(15)
+
+val rec factorial = fn(x, acc) => if (x <= 1) 
+                                    then (acc) 
+                                    else (factorial(x - 1, x * acc))
+factorial(15, 1)
 
 val a = 2
 fun intToString(a) = 
@@ -44,3 +49,4 @@ end
 val f = fn(x) => fn (y) => x + y
 val g = f(1)
 g(5)
+
