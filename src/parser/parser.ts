@@ -7,7 +7,7 @@ import { TerminalNode } from 'antlr4ts/tree/TerminalNode'
 import { display, error, head, is_null, is_undefined, pair, stringify, tail } from 'sicp'
 
 import { debug } from '../interpreter/debug'
-import { assign, extend, global_environment, lookup } from '../interpreter/environment'
+import { assign, extend, lookup } from '../interpreter/environment'
 import { SmlLexer } from '../lang/SmlLexer'
 import { ApplyContext, BinopContext, BoolExpressionContext, CharExpressionContext, ExpressionListContext, IdentifierContext, IntExpressionContext, ListContext, NextPatternContext, NilListContext, OtherPatternContext, RealExpressionContext, SmlParser, StringExpressionContext, UnitExpressionContext, UnopContext, WildCardPatternContext } from "../lang/SmlParser";
 import { ApplyUnitContext } from '../lang/SmlParser'
@@ -183,7 +183,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
 
     this.global_environment = pair(global_frame, null)
 
-    this.E = pair({}, global_environment)
+    this.E = pair({}, this.global_environment)
   }
 
   freshType(): any {
@@ -215,7 +215,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
   }
 
   unifyConstraints(constraints: any[]): pair[] {
-    // display(constraints, "Unifying: ")
+    display(constraints, "Unifying: ")
 
     if (constraints.length === 0) {
       return []

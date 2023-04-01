@@ -221,9 +221,9 @@ export const value_to_string = (x, letterMap = {}, letterGenerator: LetterGenera
                     : is_lit(x)
                         ? (
                             x.type.tag == 'char'
-                                ? "#'" + x.val + "' : " + value_to_string(x.type, letterMap, letterGenerator)
+                                ? '#"' + x.val + '" : ' + value_to_string(x.type, letterMap, letterGenerator)
                                 : x.type.tag == 'string'
-                                    ? "'" + x.val + "' : " + value_to_string(x.type, letterMap, letterGenerator)
+                                    ? '"' + x.val + '" : ' + value_to_string(x.type, letterMap, letterGenerator)
                                     : x.val + " : " + value_to_string(x.type, letterMap, letterGenerator)
                         )
                         : is_type(x)
