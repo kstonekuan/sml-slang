@@ -183,7 +183,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
 
     this.global_environment = pair(global_frame, null)
 
-    this.E = pair(global_environment, null)
+    this.E = pair({}, global_environment)
   }
 
   freshType(): any {
@@ -473,6 +473,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
     const sym = ctx._name.text
     const prms = ctx._rest.map(element => element.text)
     prms.unshift(ctx._first.text)
+    if (new Set(prms).size !== prms.length) throw new SyntaxError(`Duplicate function parameters: at ${stringify(contextToLocation(ctx))}`)
     const prmsTypes = prms.map(_ => this.freshType())
     // Support recursive functions
     let type = this.freshType()
@@ -590,6 +591,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
     //   and env, x : 't1 |- e : t2 -| C
     const prms = ctx._rest.map(element => element.text)
     prms.unshift(ctx._first.text)
+    if (new Set(prms).size !== prms.length) throw new SyntaxError(`Duplicate function parameters: at ${stringify(contextToLocation(ctx))}`)
     const prmsTypes = prms.map(_ => this.freshType())
     const originalEnv = this.E
     this.E = extend(prms, prmsTypes, this.E)
@@ -942,6 +944,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
   visitStart(ctx: StartContext): any {
     // display(ctx._statements, "[parser.ts] StartContext -> _statements: ")
     this.E = extend([], [], this.E)
+    debug({ tag: 'start' }, [], [], this.E)
     return ctx._statements.map(statement => this.visit(statement))
   }
   visitStatement?(ctx: StatementContext): any | undefined
