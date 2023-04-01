@@ -7,7 +7,7 @@ import { TerminalNode } from 'antlr4ts/tree/TerminalNode'
 import { display, error, head, is_null, is_undefined, pair, stringify, tail } from 'sicp'
 
 import { debug } from '../interpreter/debug'
-import { assign, extend, global_environment, lookup } from '../interpreter/environment'
+import { assign, extend, lookup } from '../interpreter/environment'
 import { SmlLexer } from '../lang/SmlLexer'
 import { ApplyContext, BinopContext, BoolExpressionContext, CharExpressionContext, ExpressionListContext, IdentifierContext, IntExpressionContext, ListContext, NextPatternContext, NilListContext, OtherPatternContext, RealExpressionContext, SmlParser, StringExpressionContext, UnitExpressionContext, UnopContext, WildCardPatternContext } from "../lang/SmlParser";
 import { ApplyUnitContext } from '../lang/SmlParser'
@@ -159,6 +159,7 @@ function contextToLocation(ctx: ExpressionContext): any {
 
 class ExpressionGenerator implements SmlVisitor<any> {
   private E: pair // type environment
+  private global_environment: pair
   private letterGenerator: LetterGenerator
 
   constructor() {
@@ -180,7 +181,9 @@ class ExpressionGenerator implements SmlVisitor<any> {
       }
     }
 
-    this.E = pair(global_frame, null)
+    this.global_environment = pair(global_frame, null)
+
+    this.E = pair({}, this.global_environment)
   }
 
   freshType(): any {
@@ -358,8 +361,8 @@ class ExpressionGenerator implements SmlVisitor<any> {
   }
   visitIdentifier(ctx: IdentifierContext): any {
     // env |- n : env(n) -| {}
-    display(ctx.text, "Indentifier -> text: ")
-    // debug({ tag: 'debug' }, [], [], this.E)
+    display(ctx.text, "[parser.txt] Indentifier -> text: ")
+    // debug({ tag: 'visitIdentifier' }, [], [], this.E)
     const sym = ctx.text
     return {
       tag: 'nam',
@@ -376,13 +379,16 @@ class ExpressionGenerator implements SmlVisitor<any> {
     elems.unshift(this.visit(ctx._first))
     elems.reverse()
 
-    const listType = elems[0].type
+    let listType = elems[0].type
+    const constraints = elems.reduce((acc, elem) => [...acc, ...elem.constraints], [])
 
-    elems.forEach(elem => {
-      if (elem.type.tag !== listType.tag) {
-        throw new TypeError(`TypeCheck: List elements must be of the same type: at ${stringify(contextToLocation(ctx))}`)
-      }
-    })
+    elems.forEach(elem => constraints.push(
+      { tag: EQ, frst: elem.type, scnd: listType }
+    ))
+
+    const substitutions = this.unifyConstraints(constraints)
+    substitutions.forEach(sub => listType = this.applySubstitution(listType, sub))
+
     return {
       tag: 'arr_lit',
       elems: elems,
@@ -390,7 +396,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
         tag: LIST,
         elem: listType
       },
-      constraints: []
+      constraints: constraints
     }
   }
   visitNilList(ctx: NilListContext): any {
@@ -432,12 +438,8 @@ class ExpressionGenerator implements SmlVisitor<any> {
     // Support recursive functions
     let type = this.freshType()
     const originalEnv = this.E
-    this.E = extend([sym], [type], this.E)
+    this.E = extend([sym], [type], this.global_environment)
     const expr = this.visit(ctx._value)
-
-    if (expr.tag === 'lam' && expr.prms.length === 0) {
-      throw new TypeError(`TypeCheck: Letrec function cannot be a lambda with unit argument: at ${stringify(contextToLocation(ctx))}`)
-    }
 
     const constraints = expr.constraints
     constraints.push({ tag: EQ, frst: type, scnd: expr.type })
@@ -470,11 +472,12 @@ class ExpressionGenerator implements SmlVisitor<any> {
     const sym = ctx._name.text
     const prms = ctx._rest.map(element => element.text)
     prms.unshift(ctx._first.text)
+    if (new Set(prms).size !== prms.length) throw new SyntaxError(`Duplicate function parameters: at ${stringify(contextToLocation(ctx))}`)
     const prmsTypes = prms.map(_ => this.freshType())
     // Support recursive functions
     let type = this.freshType()
     const originalEnv = this.E
-    this.E = extend([...prms, sym], [...prmsTypes, type], this.E)
+    this.E = extend([...prms, sym], [...prmsTypes, type], this.global_environment)
     const body = this.visit(ctx._body)
 
     const constraints = body.constraints
@@ -570,12 +573,27 @@ class ExpressionGenerator implements SmlVisitor<any> {
     display(ctx._identifierApply.text, '[parser.ts] ApplyUnit -> _identifierApply.text: ')
     const fun = this.visit(ctx._identifierApply)
 
+    let type = this.freshType()
+    const constraints = fun.constraints
+    constraints.push({
+      tag: EQ,
+      frst: fun.type,
+      scnd: {
+        tag: FN,
+        args: [{ tag: UNIT }],
+        ret: type,
+      },
+    })
+
+    const substitutions = this.unifyConstraints(constraints)
+    substitutions.forEach(sub => type = this.applySubstitution(type, sub))
+
     return {
       tag: 'app',
       fun: fun,    // TODO: struct
       args: [],
-      type: fun.type.ret,
-      constraints: [],
+      type: type,
+      constraints: constraints,
     }
   }
   visitLambdaExpression(ctx: LambdaExpressionContext): any {
@@ -587,6 +605,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
     //   and env, x : 't1 |- e : t2 -| C
     const prms = ctx._rest.map(element => element.text)
     prms.unshift(ctx._first.text)
+    if (new Set(prms).size !== prms.length) throw new SyntaxError(`Duplicate function parameters: at ${stringify(contextToLocation(ctx))}`)
     const prmsTypes = prms.map(_ => this.freshType())
     const originalEnv = this.E
     this.E = extend(prms, prmsTypes, this.E)
@@ -619,18 +638,23 @@ class ExpressionGenerator implements SmlVisitor<any> {
     // Special case: no argument type already known
     const body = this.visit(ctx._body)
 
-    const type = {
+    let type = {
       tag: FN,
       args: [{ tag: UNIT }], // conceptually args is a tuple
       ret: body.type,
     }
+
+    const constraints = body.constraints
+
+    const substitutions = this.unifyConstraints(constraints)
+    substitutions.forEach(sub => type = this.applySubstitution(type, sub))
 
     return {
       tag: 'lam',
       prms: [],
       body: body,
       type: type,
-      constraints: [],
+      constraints: constraints,
     }
   }
   visitBinaryOperatorExpression(ctx: BinaryOperatorExpressionContext): any {
@@ -856,7 +880,6 @@ class ExpressionGenerator implements SmlVisitor<any> {
       tag: 'let',
       declarations: elems,
       expr: expr,
-      // TODO
       type: expr.type,
       constraints: expr.constraints,
     }
@@ -878,7 +901,6 @@ class ExpressionGenerator implements SmlVisitor<any> {
       tag: 'local',
       locals: locals,
       globals: globals,
-      // TODO
       type: globals.at(-1).type,
       constraints: [],
     }
@@ -889,28 +911,28 @@ class ExpressionGenerator implements SmlVisitor<any> {
     //   and env |- e1 : t1 -| C1
     //   and env |- e2 : t2 -| C2
     //   and env |- e3 : t3 -| C3
+    const val = this.visit(ctx._value)
     const pats = ctx._otherPatterns.map(pat => this.visit(pat))
-    pats.unshift({ case: this.visit(ctx._firstCase), result: this.visit(ctx._firstResult) })  
+    pats.unshift({ case: this.visit(ctx._firstCase), result: this.visit(ctx._firstResult) })
     pats.forEach(pat => display(pat, "LOL: "))
 
     if (pats[pats.length - 1].case.val !== '_') {    // Check if Pats last element is a wildcard or not, and enforce that it is
       throw new SyntaxError("Wildcard not last pattern")
     }
     // then for bool check if true and false is already in and theres no other, else throw an error
-    
+
     let type = this.freshType()
-    const constraints = [...pats.map(pat => pat.case.constraints).flat(), ...pats.map(pat => pat.result.constraints).flat()]
-    pats.forEach(pat => constraints.push({ tag: EQ, frst: type, scnd: pat.result.type }))
+    const constraints = pats.map(pat => [...pat.case.constraints, ...pat.result.constraints]).flat()
+    pats.forEach(pat => constraints.push({ tag: EQ, frst: type, scnd: pat.result.type }, { tag: EQ, frst: val.type, scnd: pat.case.type }))
 
     const substitutions = this.unifyConstraints(constraints)
     substitutions.forEach(sub => type = this.applySubstitution(type, sub))
 
     return {
       tag: 'pat_match',
-      val: this.visit(ctx._value),
+      val: val,
       cases: pats.map(pat => pat.case).reverse(),
       results: pats.map(pat => pat.result),
-      // TODO
       type: type,
       constraints: constraints,
     }
@@ -923,12 +945,10 @@ class ExpressionGenerator implements SmlVisitor<any> {
   }
   visitWildCardPattern(ctx: WildCardPatternContext): any {
     return {
-      case: {      
+      case: {
         tag: 'lit',
         val: '_',
-        type: {
-          tag: CHAR,
-        },
+        type: this.freshType(),
         constraints: [],
       },
       result: this.visit(ctx._wildCardResult),
@@ -942,6 +962,8 @@ class ExpressionGenerator implements SmlVisitor<any> {
   visitExpression?(ctx: ExpressionContext): any | undefined
   visitStart(ctx: StartContext): any {
     // display(ctx._statements, "[parser.ts] StartContext -> _statements: ")
+    this.E = extend([], [], this.E)
+    debug({ tag: 'visitStart' }, [], [], this.E)
     return ctx._statements.map(statement => this.visit(statement))
   }
   visitStatement?(ctx: StatementContext): any | undefined

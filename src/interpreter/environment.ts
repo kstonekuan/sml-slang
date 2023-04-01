@@ -1,3 +1,4 @@
+import { get } from 'lodash';
 import { arity, error, head, is_null, pair, tail } from 'sicp';
 
 import { builtin_mapping, is_unassigned, unassigned } from '../utils/evaluator'
@@ -52,6 +53,13 @@ export const assign = (x, v, e) => {
     } else {
         assign(x, v, tail(e))
     }
+}
+
+export const get_symbols = (e) => {
+    if (is_null(e))
+        return []
+    else
+        return [...Object.keys(head(e)), ...get_symbols(tail(e))]
 }
 
 export const extend = (xs, vs, e) => {

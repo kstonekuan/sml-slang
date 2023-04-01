@@ -1,10 +1,10 @@
 /* tslint:disable:max-classes-per-file */
-import { display, error, head, pair, stringify, tail, equal } from 'sicp'
+import { display, equal, error, head, is_undefined, pair, stringify, tail } from 'sicp'
 
 import { Context } from '../types'
 import { apply_binop, apply_builtin, apply_unop, peek, push, unassigned, value_to_string } from '../utils/evaluator'
 import { command_to_string, debug } from './debug'
-import { assign, extend, global_environment, handle_sequence, lookup, scan } from './environment'
+import { assign, extend, get_symbols, global_environment, handle_sequence, lookup, scan } from './environment'
 
 /* **************************
  * interpreter configurations
@@ -90,8 +90,16 @@ const microcode = {
     cmd =>
       push(A, { tag: 'assmt_i', sym: cmd.sym }, cmd.expr),
   lam:
-    cmd =>
-      push(S, { tag: 'closure', prms: cmd.prms, body: cmd.body, env: E, type: cmd.type }),
+    cmd => {
+      let env;
+      if ('env' in cmd) {
+        env = cmd.env
+        display(env, 'cmd.env: ')
+      } else {
+        env = E
+      }
+      push(S, { tag: 'closure', prms: cmd.prms, body: cmd.body, env: env, type: cmd.type })
+    },
   arr_lit:
     cmd =>
       push(A, { tag: 'arr_lit_i', arity: cmd.elems.length, type: cmd.type }, ...cmd.elems),
@@ -122,6 +130,9 @@ const microcode = {
     },
   val:
     cmd => {
+      if (cmd.expr.tag === 'lam') {
+        cmd.expr.env = pair({}, global_environment)
+      }
       push(A, { tag: 'assmt', sym: cmd.sym, expr: cmd.expr })
     },
   letrec:
@@ -160,7 +171,7 @@ const microcode = {
         }
       }
       // Add wildcard result if reach here
-      push(A, cmd.results[arity-1]) // TODO: should not be able to have undefined, throw error if there is no wildcard or variable pattern
+      push(A, cmd.results[arity - 1]) // TODO: should not be able to have undefined, throw error if there is no wildcard or variable pattern
     },
   assmt_i:
     // peek top of stash without popping:
@@ -190,14 +201,17 @@ const microcode = {
       // remaining case: sf.tag === 'closure'
       if (A.length === 0 || peek(A).tag === 'env_i') {
         // current E not needed, tail call?
+        E = sf.env // Ensure that E is the function E
+        for (let i = 0; i < arity; i++)
+          head(E)[sf.prms[i]] = args[i]
       } else {
         // general case:
         // push current environment
         push(A, { tag: 'env_i', env: E })
+        E = extend(sf.prms, args, sf.env)
       }
       sf.body.type = cmd.type // Override builtin types in body
       push(A, sf.body)
-      E = extend(sf.prms, args, sf.env)
     },
   branch_i:
     cmd =>
@@ -250,7 +264,7 @@ const microcode = {
     },
 }
 
-const step_limit = 1000
+const step_limit = 500
 
 // tslint:enable:object-literal-shorthand
 export function execute(program: any) {

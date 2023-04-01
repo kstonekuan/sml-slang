@@ -198,28 +198,44 @@ export function arr_to_list(arr: any[]) {
     return list
 }
 
+const stringifyTypeVariable = (typeVariable, letterMap, letterGenerator) => {
+    if (typeVariable.slice(1) in letterMap) {
+        return "'" + letterMap[typeVariable.slice(1)]
+    } else {
+        const letter = letterGenerator.generate()
+        letterMap[typeVariable.slice(1)] = letter
+        return "'" + letter
+    }
+}
+
 // catching closure and builtins to get short displays
-export const value_to_string = x =>
+export const value_to_string = (x, letterMap = {}, letterGenerator: LetterGenerator = new LetterGenerator()) =>
     is_unassigned(x)
         ? '<unassigned>'
         : is_closure(x)
-            ? 'fn : ' + value_to_string(x.type)
+            ? 'fn : ' + value_to_string(x.type, letterMap, letterGenerator)
             : is_builtin(x)
                 ? '<builtin: ' + x.sym + '>'
                 : is_list(x)
-                    ? stringify(list_to_arr(x.val)) + " : " + value_to_string(x.type)
+                    ? stringify(list_to_arr(x.val)) + " : " + value_to_string(x.type, letterMap, letterGenerator)
                     : is_lit(x)
-                        ? x.val + " : " + value_to_string(x.type)
+                        ? (
+                            x.type.tag == 'char'
+                                ? '#"' + x.val + '" : ' + value_to_string(x.type, letterMap, letterGenerator)
+                                : x.type.tag == 'string'
+                                    ? '"' + x.val + '" : ' + value_to_string(x.type, letterMap, letterGenerator)
+                                    : x.val + " : " + value_to_string(x.type, letterMap, letterGenerator)
+                        )
                         : is_type(x)
                             ? (
                                 PRIMS.includes(x.tag)
                                     ? x.tag
                                     : x.tag == LIST
-                                        ? value_to_string(x.elem) + " list"
-                                        : x.args.map(value_to_string).join(' * ') + ' -> ' + value_to_string(x.ret) // FN
+                                        ? value_to_string(x.elem, letterMap, letterGenerator) + " list"
+                                        : x.args.map(arg => value_to_string(arg, letterMap, letterGenerator)).join(' * ') + ' -> ' + value_to_string(x.ret, letterMap, letterGenerator) // FN
                             )
                             : is_type_variable(x)
-                                ? x.tag
+                                ? stringifyTypeVariable(x.tag, letterMap, letterGenerator)
                                 : stringify(x)
 
 export const INT = 'int'
