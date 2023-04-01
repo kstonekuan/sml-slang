@@ -215,7 +215,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
   }
 
   unifyConstraints(constraints: any[]): pair[] {
-    display(constraints, "Unifying: ")
+    // display(constraints, "Unifying: ")
 
     if (constraints.length === 0) {
       return []
@@ -361,8 +361,8 @@ class ExpressionGenerator implements SmlVisitor<any> {
   }
   visitIdentifier(ctx: IdentifierContext): any {
     // env |- n : env(n) -| {}
-    display(ctx.text, "Indentifier -> text: ")
-    // debug({ tag: 'debug' }, [], [], this.E)
+    display(ctx.text, "[parser.txt] Indentifier -> text: ")
+    // debug({ tag: 'visitIdentifier' }, [], [], this.E)
     const sym = ctx.text
     return {
       tag: 'nam',
@@ -379,13 +379,16 @@ class ExpressionGenerator implements SmlVisitor<any> {
     elems.unshift(this.visit(ctx._first))
     elems.reverse()
 
-    const listType = elems[0].type
+    let listType = elems[0].type
+    const constraints = elems.reduce((acc, elem) => [...acc, ...elem.constraints], [])
 
-    elems.forEach(elem => {
-      if (elem.type.tag !== listType.tag) {
-        throw new TypeError(`TypeCheck: List elements must be of the same type: at ${stringify(contextToLocation(ctx))}`)
-      }
-    })
+    elems.forEach(elem => constraints.push(
+      { tag: EQ, frst: elem.type, scnd: listType }
+    ))
+
+    const substitutions = this.unifyConstraints(constraints)
+    substitutions.forEach(sub => listType = this.applySubstitution(listType, sub))
+
     return {
       tag: 'arr_lit',
       elems: elems,
@@ -393,7 +396,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
         tag: LIST,
         elem: listType
       },
-      constraints: []
+      constraints: constraints
     }
   }
   visitNilList(ctx: NilListContext): any {
@@ -437,10 +440,6 @@ class ExpressionGenerator implements SmlVisitor<any> {
     const originalEnv = this.E
     this.E = extend([sym], [type], this.global_environment)
     const expr = this.visit(ctx._value)
-
-    if (expr.tag === 'lam' && expr.prms.length === 0) {
-      throw new TypeError(`TypeCheck: Letrec function cannot be a lambda with unit argument: at ${stringify(contextToLocation(ctx))}`)
-    }
 
     const constraints = expr.constraints
     constraints.push({ tag: EQ, frst: type, scnd: expr.type })
@@ -574,12 +573,27 @@ class ExpressionGenerator implements SmlVisitor<any> {
     display(ctx._identifierApply.text, '[parser.ts] ApplyUnit -> _identifierApply.text: ')
     const fun = this.visit(ctx._identifierApply)
 
+    let type = this.freshType()
+    const constraints = fun.constraints
+    constraints.push({
+      tag: EQ,
+      frst: fun.type,
+      scnd: {
+        tag: FN,
+        args: [{ tag: UNIT }],
+        ret: type,
+      },
+    })
+
+    const substitutions = this.unifyConstraints(constraints)
+    substitutions.forEach(sub => type = this.applySubstitution(type, sub))
+
     return {
       tag: 'app',
       fun: fun,    // TODO: struct
       args: [],
-      type: fun.type.ret,
-      constraints: [],
+      type: type,
+      constraints: constraints,
     }
   }
   visitLambdaExpression(ctx: LambdaExpressionContext): any {
@@ -624,18 +638,23 @@ class ExpressionGenerator implements SmlVisitor<any> {
     // Special case: no argument type already known
     const body = this.visit(ctx._body)
 
-    const type = {
+    let type = {
       tag: FN,
       args: [{ tag: UNIT }], // conceptually args is a tuple
       ret: body.type,
     }
+
+    const constraints = body.constraints
+
+    const substitutions = this.unifyConstraints(constraints)
+    substitutions.forEach(sub => type = this.applySubstitution(type, sub))
 
     return {
       tag: 'lam',
       prms: [],
       body: body,
       type: type,
-      constraints: [],
+      constraints: constraints,
     }
   }
   visitBinaryOperatorExpression(ctx: BinaryOperatorExpressionContext): any {
@@ -944,7 +963,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
   visitStart(ctx: StartContext): any {
     // display(ctx._statements, "[parser.ts] StartContext -> _statements: ")
     this.E = extend([], [], this.E)
-    debug({ tag: 'start' }, [], [], this.E)
+    debug({ tag: 'visitStart' }, [], [], this.E)
     return ctx._statements.map(statement => this.visit(statement))
   }
   visitStatement?(ctx: StatementContext): any | undefined
