@@ -510,16 +510,34 @@ class ExpressionGenerator implements SmlVisitor<any> {
     return this.visit(ctx._body)
   }
   visitFunctionUnit(ctx: FunctionUnitContext): any {
-    // Special case: argument type already known, cannot be recursive
+    // Special case: argument type already known
     display(ctx._name.text, '[parser.ts] FunctionUnit -> _name.text: ')
     const sym = ctx._name.text
+    // Support recursive functions
+    let type = this.freshType()
+    const originalEnv = this.E
+    this.E = extend([sym], [type], this.global_environment)
     const body = this.visit(ctx._body)
 
-    const type = {
-      tag: FN,
-      args: [{ tag: UNIT }],
-      ret: body.type,
-    }
+    const constraints = body.constraints
+    constraints.push({
+      tag: EQ,
+      frst: type,
+      scnd: {
+        tag: FN,
+        args: [{ tag: UNIT }],
+        ret: body.type,
+      }
+    })
+
+    const substitutions = this.unifyConstraints(constraints)
+    substitutions.forEach(sub => {
+      type = this.applySubstitution(type, sub)
+      this.recycleTypeVariableFromSubstitution(sub)
+    })
+
+
+    this.E = originalEnv
     head(this.E)[sym] = type
 
     return {
