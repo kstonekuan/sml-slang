@@ -94,11 +94,10 @@ const microcode = {
       let env;
       if ('env' in cmd) {
         env = cmd.env
-        display(env, 'cmd.env: ')
       } else {
         env = E
       }
-      push(S, { tag: 'closure', prms: cmd.prms, body: cmd.body, env: env, type: cmd.type })
+      push(S, { tag: 'closure', prms: cmd.prms, body: cmd.body, env: extend([], [], env), type: cmd.type })
     },
   arr_lit:
     cmd =>
@@ -131,7 +130,7 @@ const microcode = {
   val:
     cmd => {
       if (cmd.expr.tag === 'lam') {
-        cmd.expr.env = pair({}, global_environment)
+        cmd.expr.env = global_environment
       }
       push(A, { tag: 'assmt', sym: cmd.sym, expr: cmd.expr })
     },
@@ -164,7 +163,7 @@ const microcode = {
       for (i; i >= 0; i--)
         cases[i] = S.pop().val
       const val = S.pop().val
-      for (let i = 0; i < arity-1; i++) {   // check all cases except wildcard
+      for (let i = 0; i < arity - 1; i++) {   // check all cases except wildcard
         if (equal(cases[i], val)) {
           push(A, cmd.results[i])
           return
@@ -200,7 +199,7 @@ const microcode = {
         return push(S, { tag: 'lit', val: apply_builtin(sf.sym, args.map(arg => arg.val)), type: cmd.type })
       // remaining case: sf.tag === 'closure'
       if (A.length === 0 || peek(A).tag === 'env_i') {
-        // current E not needed, tail call?
+        // current E not needed or tail call
         E = sf.env // Ensure that E is the function E
         for (let i = 0; i < arity; i++)
           head(E)[sf.prms[i]] = args[i]
