@@ -160,8 +160,8 @@ const microcode = {
           return
         }
       }
-      // Add wildcard result if reach here
-      push(A, cmd.results[arity - 1]) // TODO: should not be able to have undefined, throw error if there is no wildcard or variable pattern
+      // Wildcard result if no patterns matched 
+      push(A, cmd.results[arity - 1])
     },
   assmt_i:
     // peek top of stash without popping:
@@ -240,7 +240,7 @@ const microcode = {
 
       // Let global declarations be at the bottom of the Agenda so that we run them after local declarations
       for (let i = cmd.globals.length - 1; i >= 0; i--) {
-        if (i < cmd.globals.length - 1) push(A, { tag: 'pop_i' })             // pop result of declaration which is undeclared. 
+        if (i < cmd.globals.length - 1) push(A, { tag: 'pop_i' })   // pop result of declaration which is undeclared. 
         push(A, cmd.globals[i])
       }
 
