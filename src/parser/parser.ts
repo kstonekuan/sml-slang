@@ -447,7 +447,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
     const substitutions = this.unifyConstraints(constraints)
     substitutions.forEach(sub => {
       type = this.applySubstitution(type, sub)
-      this.recycleTypeVariableFromSubstitution(sub)
+      // this.recycleTypeVariableFromSubstitution(sub)
     })
 
     this.E = originalEnv
@@ -494,7 +494,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
     const substitutions = this.unifyConstraints(constraints)
     substitutions.forEach(sub => {
       type = this.applySubstitution(type, sub)
-      this.recycleTypeVariableFromSubstitution(sub)
+      // this.recycleTypeVariableFromSubstitution(sub)
     })
 
     this.E = originalEnv
@@ -504,6 +504,8 @@ class ExpressionGenerator implements SmlVisitor<any> {
       tag: 'letrec',
       sym: sym,
       expr: { tag: 'lam', prms: prms, body: body, type: type, constraints: constraints },
+      type: type,
+      constraints: constraints
     }
   }
   visitFunctionUnitDeclaration(ctx: FunctionUnitDeclarationContext): any {
@@ -533,7 +535,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
     const substitutions = this.unifyConstraints(constraints)
     substitutions.forEach(sub => {
       type = this.applySubstitution(type, sub)
-      this.recycleTypeVariableFromSubstitution(sub)
+      // this.recycleTypeVariableFromSubstitution(sub)
     })
 
 
