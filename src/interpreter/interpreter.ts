@@ -1,5 +1,5 @@
 /* tslint:disable:max-classes-per-file */
-import { display, error, head, is_undefined, pair, stringify, tail } from 'sicp'
+import { display, equal, error, head, is_undefined, pair, stringify, tail } from 'sicp'
 
 import { Context } from '../types'
 import { apply_binop, apply_builtin, apply_unop, peek, push, unassigned, value_to_string } from '../utils/evaluator'
@@ -164,8 +164,8 @@ const microcode = {
       for (i; i >= 0; i--)
         cases[i] = S.pop().val
       const val = S.pop().val
-      for (let i = 0; i < arity - 1; i++) {   // check all cases except wildcard
-        if (cases[i] === val) {
+      for (let i = 0; i < arity-1; i++) {   // check all cases except wildcard
+        if (equal(cases[i], val)) {
           push(A, cmd.results[i])
           return
         }
