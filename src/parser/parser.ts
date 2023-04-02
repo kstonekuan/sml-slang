@@ -426,7 +426,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
       sym: sym,
       expr: expr,
       type: type,
-      constraints: []
+      constraints: expr.constraints
     }
   }
   visitLetrecDeclaration(ctx: LetrecDeclarationContext): any {
@@ -458,7 +458,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
       sym: sym,
       expr: expr,
       type: type,
-      constraints: []
+      constraints: constraints
     }
   }
   visitFunctionDeclaration(ctx: FunctionDeclarationContext): any {
@@ -503,7 +503,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
     return {
       tag: 'letrec',
       sym: sym,
-      expr: { tag: 'lam', prms: prms, body: body, type: type, constraints: [] }
+      expr: { tag: 'lam', prms: prms, body: body, type: type, constraints: constraints },
     }
   }
   visitFunctionUnitDeclaration(ctx: FunctionUnitDeclarationContext): any {
@@ -543,7 +543,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
     return {
       tag: 'val',
       sym: sym,
-      expr: { tag: 'lam', prms: [], body: body, type: type, constraints: [] }
+      expr: { tag: 'lam', prms: [], body: body, type: type, constraints: constraints }
     }
   }
   visitApplyExpression(ctx: ApplyExpressionContext): any {
@@ -894,12 +894,16 @@ class ExpressionGenerator implements SmlVisitor<any> {
     const elems = ctx._declarations.map(element => this.visit(element))
     const expr = this.visit(ctx._body)
     this.E = originalEnv
+
+    const constraints = elems.reduce((acc, elem) => [...acc, ...elem.constraints], [])
+    constraints.push(...expr.constraints)
+
     return {
       tag: 'let',
       declarations: elems,
       expr: expr,
       type: expr.type,
-      constraints: expr.constraints,
+      constraints: constraints,
     }
   }
   visitLocalBlockDeclaration(ctx: LocalBlockDeclarationContext): any {
