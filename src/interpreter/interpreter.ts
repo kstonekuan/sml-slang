@@ -91,13 +91,7 @@ const microcode = {
       push(A, { tag: 'assmt_i', sym: cmd.sym }, cmd.expr),
   lam:
     cmd => {
-      let env;
-      if ('env' in cmd) {
-        env = cmd.env
-      } else {
-        env = E
-      }
-      push(S, { tag: 'closure', prms: cmd.prms, body: cmd.body, env: extend([], [], env), type: cmd.type })
+      push(S, { tag: 'closure', prms: cmd.prms, body: cmd.body, env: extend([], [], E), type: cmd.type })
     },
   arr_lit:
     cmd =>
@@ -129,9 +123,6 @@ const microcode = {
     },
   val:
     cmd => {
-      if (cmd.expr.tag === 'lam') {
-        cmd.expr.env = global_environment
-      }
       push(A, { tag: 'assmt', sym: cmd.sym, expr: cmd.expr })
     },
   letrec:

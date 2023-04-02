@@ -49,6 +49,7 @@ export const assign = (x, v, e) => {
     if (is_null(e))
         error(x, 'unbound name:')
     if (head(e).hasOwnProperty(x)) {
+        if (!is_unassigned(head(e)[x])) error(`${x} is not a new variable; it is bound already`)
         head(e)[x] = v
     } else {
         assign(x, v, tail(e))

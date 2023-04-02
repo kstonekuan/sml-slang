@@ -438,7 +438,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
     // Support recursive functions
     let type = this.freshType()
     const originalEnv = this.E
-    this.E = extend([sym], [type], this.global_environment)
+    this.E = extend([sym], [type], this.E)
     const expr = this.visit(ctx._value)
 
     const constraints = expr.constraints
@@ -477,7 +477,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
     // Support recursive functions
     let type = this.freshType()
     const originalEnv = this.E
-    this.E = extend([...prms, sym], [...prmsTypes, type], this.global_environment)
+    this.E = extend([...prms, sym], [...prmsTypes, type], this.E)
     const body = this.visit(ctx._body)
 
     const constraints = body.constraints
@@ -518,7 +518,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
     // Support recursive functions
     let type = this.freshType()
     const originalEnv = this.E
-    this.E = extend([sym], [type], this.global_environment)
+    this.E = extend([sym], [type], this.E)
     const body = this.visit(ctx._body)
 
     const constraints = body.constraints
