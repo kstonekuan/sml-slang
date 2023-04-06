@@ -579,7 +579,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
 
     return {
       tag: 'app',
-      fun: fun,    // TODO: struct
+      fun: fun,
       args: args.reverse(),
       type: type,
       constraints: constraints,
@@ -610,7 +610,7 @@ class ExpressionGenerator implements SmlVisitor<any> {
 
     return {
       tag: 'app',
-      fun: fun,    // TODO: struct
+      fun: fun,
       args: [],
       type: type,
       constraints: constraints,
@@ -1001,16 +1001,6 @@ class ExpressionGenerator implements SmlVisitor<any> {
   visitParentheses(ctx: ParenthesesContext): any {
     return this.visit(ctx._inner)
   }
-
-  // visitType(ctx: TypeContext): any {      // TODO: Check if this is correct
-  //   return {
-  //     tag: 'type',
-  //     val: ctx.text,
-  //     loc: contextToLocation(ctx)
-  //   }
-  // }
-
-
   visit(tree: ParseTree): any {
     return tree.accept(this)
   }
@@ -1045,56 +1035,6 @@ class ExpressionGenerator implements SmlVisitor<any> {
     )
   }
 }
-
-// class DeclarationGenerator implements SmlVisitor<es.Declaration> {
-
-//   visitVariableDeclaration(ctx: VariableDeclarationContext): es.Declaration {
-//     return {
-//       type: 'VariableDeclaration',
-//       declarations: ctx[0],       // check this against index.d.ts
-//       kind: 'var',
-//       loc: contextToLocation(ctx)
-//     }
-//   }
-
-
-//   /* NOT SURE IF I AM RIGHT OR NOT JUST FOLLOWING FROM EXPRESSION EXAMPLE ABOVE */
-//   visitDeclaration?: ((ctx: DeclarationContext) => es.Declaration) | undefined
-//   visitStart?: ((ctx: StartContext) => es.Declaration) | undefined      // not sure if this is right
-
-//   visit(tree: ParseTree): es.Declaration {
-//     return tree.accept(this)
-//   }
-//   visitChildren(node: RuleNode): es.Declaration {
-//     const declarations: es.VariableDeclarator[] = []
-//     for (let i = 0; i < node.childCount; i++) {
-//       declarations.push(node.getChild(i).accept(this))
-//     }
-//     return {
-//       type: 'Declaration',
-//       declarations          // Do we even need a sequence of declarations? lol idk alr
-//     }
-//   }
-//   visitTerminal(node: TerminalNode): es.Declaration {
-//     return node.accept(this)
-//   }
-
-//   visitErrorNode(node: ErrorNode): es.Declaration {
-//     throw new FatalSyntaxError(
-//       {
-//         start: {
-//           line: node.symbol.line,
-//           column: node.symbol.charPositionInLine
-//         },
-//         end: {
-//           line: node.symbol.line,
-//           column: node.symbol.charPositionInLine + 1
-//         }
-//       },
-//       `invalid syntax ${node.text}`
-//     )
-//   }
-// }
 
 function convertTree(tree: StartContext): any {
   const generator = new ExpressionGenerator()

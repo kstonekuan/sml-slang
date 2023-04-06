@@ -161,7 +161,7 @@ const microcode = {
         }
       }
       // Add wildcard result if reach here
-      push(A, cmd.results[arity - 1]) // TODO: should not be able to have undefined, throw error if there is no wildcard or variable pattern
+      push(A, cmd.results[arity - 1])
     },
   assmt_i:
     // peek top of stash without popping:

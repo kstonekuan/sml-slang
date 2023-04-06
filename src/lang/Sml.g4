@@ -22,10 +22,6 @@ NEXT_PATTERN: '|';
 WILD_CARD_PATTERN: '_';
 ASSIGN: '=';
 
-// TYPE_INT: 'int'; TYPE_REAL: 'real'; TYPE_STRING: 'string'; TYPE_CHAR: 'char'; TYPE_BOOL: 'bool';
-// TYPE_UNIT: 'unit'; TYPE_LIST: 'list'; SINGLE_ARROW: '->'; SIGNATURE: 'signature'; SIG: 'sig';
-// STRUCTURE: 'structure'; STRUCT: 'struct'; FUNCTOR: 'functor';
-
 // Punctuation
 L_CURLY: '{';
 R_CURLY: '}';
@@ -88,8 +84,6 @@ statement:
 	body = declaration	# declarationStatement
 	| body = expression	# expressionStatement;
 
-// identifierTuple: '(' first = IDENTIFIER (COMMA rest += IDENTIFIER)+ ')';
-
 variable: VAL name = IDENTIFIER ASSIGN value = expression;
 
 letrec: VAL REC name = IDENTIFIER ASSIGN value = expression;
@@ -148,10 +142,9 @@ parentheses: '(' inner = expression ')';
 applyUnit: identifierApply = identifier UNIT;
 
 apply:
-	(
-		identifierApply = identifier
-		// | structNameApply = IDENTIFIER DOT structMethodApply = IDENTIFIER
-	) arg = '(' first = expression (COMMA rest += expression)* ')';
+	identifierApply = identifier arg = '(' first = expression (
+		COMMA rest += expression
+	)* ')';
 
 identifier: IDENTIFIER;
 
@@ -161,17 +154,16 @@ otherPattern:
 	| NEXT_PATTERN WILD_CARD_PATTERN DOUBLE_ARROW wildCardResult = expression	# wildCardPattern;
 
 expression:
-	body = applyUnit		# applyUnitExpression
-	| body = apply			# applyExpression
-	| INT					# intExpression
-	| REAL					# realExpression
-	| BOOL					# boolExpression
-	| UNIT					# unitExpression
-	| CHAR					# charExpression
-	| STRING				# stringExpression
-	| body = identifier		# identifierExpression
-	| body = parentheses	# parenthesesExpression
-	// | '(' first = expression (COMMA rest += expression)+ ')'									# tupleExpression
+	body = applyUnit																			# applyUnitExpression
+	| body = apply																				# applyExpression
+	| INT																						# intExpression
+	| REAL																						# realExpression
+	| BOOL																						# boolExpression
+	| UNIT																						# unitExpression
+	| CHAR																						# charExpression
+	| STRING																					# stringExpression
+	| body = identifier																			# identifierExpression
+	| body = parentheses																		# parenthesesExpression
 	| body = list																				# listExpression
 	| IF predicate = parentheses THEN consequent = parentheses ELSE alternative = parentheses	#
 		conditionalExpression
@@ -183,21 +175,3 @@ expression:
 	| CASE value = expression OF firstCase = expression DOUBLE_ARROW firstResult = expression (
 		otherPatterns += otherPattern
 	)* # patternMatchExpression;
-// | name = IDENTIFIER DOT attribute = IDENTIFIER # structAttributeExpression; TODO accessing a
-// struct’s attribute
-
-// type: // TODO TYPE_INT | TYPE_REAL | TYPE_BOOL | TYPE_UNIT | TYPE_STRING | TYPE_CHAR | type
-// TYPE_LIST // list | type MUL type // tuple | type SINGLE_ARROW type // function | '(' type ')';
-
-// typeDefinition: VAL IDENTIFIER COLON type; // TODO
-
-// moduleSignature: // TODO SIGNATURE name = IDENTIFIER ASSIGN SIG typeDefinition+ END;
-
-// structBlock: STRUCT (variable | function)+ END; // TODO
-
-// moduleStructure: // TODO STRUCTURE name = IDENTIFIER ASSIGN ( structBlock | functorApply );
-
-// functorApply: // TODO functorName = IDENTIFIER '(' structName = IDENTIFIER ')';
-
-// functorDef: // TODO FUNCTOR name = IDENTIFIER '(' structName = IDENTIFIER COLON sigName =
-// IDENTIFIER ')' ASSIGN structBlock;
