@@ -4,10 +4,10 @@ import { ErrorNode } from 'antlr4ts/tree/ErrorNode'
 import { ParseTree } from 'antlr4ts/tree/ParseTree'
 import { RuleNode } from 'antlr4ts/tree/RuleNode'
 import { TerminalNode } from 'antlr4ts/tree/TerminalNode'
-import { display, error, head, is_null, is_undefined, pair, stringify, tail } from 'sicp'
+import { display, head, pair, stringify, tail } from 'sicp'
 
 import { debug } from '../interpreter/debug'
-import { assign, extend, lookup } from '../interpreter/environment'
+import { extend, lookup } from '../interpreter/environment'
 import { SmlLexer } from '../lang/SmlLexer'
 import { ApplyContext, BinopContext, BoolExpressionContext, CharExpressionContext, ExpressionListContext, IdentifierContext, IntExpressionContext, ListContext, NextPatternContext, NilListContext, OtherPatternContext, RealExpressionContext, SmlParser, StringExpressionContext, UnitExpressionContext, UnopContext, WildCardPatternContext } from "../lang/SmlParser";
 import { ApplyUnitContext } from '../lang/SmlParser'
@@ -53,10 +53,8 @@ import { ListConstructBinopContext } from "../lang/SmlParser";
 import { ListConcatBinopContext } from "../lang/SmlParser";
 import { SmlVisitor } from '../lang/SmlVisitor'
 import { Context, ErrorSeverity, ErrorType, SourceError } from '../types'
-import { declaration } from '../utils/astCreator'
 import { BOOL, CHAR, EQ, FN, INT, is_type_variable, LetterGenerator, LIST, PRIMS, REAL, STRING, UNIT } from '../utils/evaluator'
 import { stripIndent } from '../utils/formatters'
-import { binaryOp } from '../utils/operators'
 
 export class DisallowedConstructError implements SourceError {
   public type = ErrorType.SYNTAX

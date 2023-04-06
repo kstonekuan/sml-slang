@@ -1,10 +1,10 @@
 /* tslint:disable:max-classes-per-file */
-import { display, equal, error, head, is_undefined, pair, stringify, tail } from 'sicp'
+import { display, equal, head, pair, stringify } from 'sicp'
 
 import { Context } from '../types'
 import { apply_binop, apply_builtin, apply_unop, peek, push, unassigned, value_to_string } from '../utils/evaluator'
 import { command_to_string, debug } from './debug'
-import { assign, extend, get_symbols, global_environment, handle_sequence, lookup, scan } from './environment'
+import { assign, extend, global_environment, handle_sequence, lookup, scan } from './environment'
 
 /* **************************
  * interpreter configurations
