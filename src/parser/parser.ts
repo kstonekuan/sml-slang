@@ -913,7 +913,6 @@ class ExpressionGenerator implements SmlVisitor<any> {
     this.E = extend([], [], this.E)
     const locals = ctx._declarations.map(declaration => this.visit(declaration))
     const globals = ctx._body.map(declaration => this.visit(declaration))
-    // display(globals, "[parser.ts] LocalBlockDeclaration -> globals: ")
     this.E = originalEnv
     for (const global of globals) {
       if (['val', 'fun', 'letrec'].includes(global.tag)) {
@@ -938,12 +937,10 @@ class ExpressionGenerator implements SmlVisitor<any> {
     const val = this.visit(ctx._value)
     const pats = ctx._otherPatterns.map(pat => this.visit(pat))
     pats.unshift({ case: this.visit(ctx._firstCase), result: this.visit(ctx._firstResult) })
-    pats.forEach(pat => display(pat, "LOL: "))
 
     if (pats[pats.length - 1].case.val !== '_') {    // Check if Pats last element is a wildcard or not, and enforce that it is
       throw new SyntaxError("Wildcard not last pattern")
     }
-    // then for bool check if true and false is already in and theres no other, else throw an error
 
     let type = this.freshType()
     const constraints = pats.map(pat => [...pat.case.constraints, ...pat.result.constraints]).flat()

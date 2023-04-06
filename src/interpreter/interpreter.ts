@@ -160,7 +160,7 @@ const microcode = {
           return
         }
       }
-      // Add wildcard result if reach here
+      // Wildcard result if no patterns matched 
       push(A, cmd.results[arity - 1])
     },
   assmt_i:
@@ -240,7 +240,7 @@ const microcode = {
 
       // Let global declarations be at the bottom of the Agenda so that we run them after local declarations
       for (let i = cmd.globals.length - 1; i >= 0; i--) {
-        if (i < cmd.globals.length - 1) push(A, { tag: 'pop_i' })             // pop result of declaration which is undeclared. 
+        if (i < cmd.globals.length - 1) push(A, { tag: 'pop_i' })   // pop result of declaration which is undeclared. 
         push(A, cmd.globals[i])
       }
 
